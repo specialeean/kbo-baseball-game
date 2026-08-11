@@ -1,0 +1,2992 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 KBO 야구 게임 마스터</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root{
+    --night:#050e0b;
+    --grass:#113324;
+    --grass2:#1a4532;
+    --dirt:#a9764e;
+    --chalk:#f8f5ec;
+    --lights:#ffce54;
+    --lights-dim:#7a6733;
+    --away:#ff5252;
+    --home:#40c4ff;
+    --panel:rgba(12, 32, 26, 0.88);
+    --line:rgba(255, 255, 255, 0.12);
+    --team-accent:#ffce54;
+    --team-glow:rgba(255, 206, 84, 0.4);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    overflow-x:hidden;
+    background:
+      radial-gradient(circle at 50% -20%, var(--team-glow), transparent 70%),
+      linear-gradient(180deg, var(--night), #020705 100%);
+    color:var(--chalk);
+    font-family:'Segoe UI', 'Malgun Gothic', -apple-system, sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:20px 10px 50px;
+    transition: background 0.5s ease;
+  }
+  .wrap{
+    width:100%;
+    max-width:680px;
+    margin:0 auto;
+  }
+  h1.title{
+    font-family:'Arial Narrow', 'Malgun Gothic', sans-serif;
+    font-weight:900;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    font-size:26px;
+    text-align:center;
+    color:var(--team-accent);
+    margin:0 0 4px;
+    text-shadow:0 0 20px var(--team-glow), 0 2px 4px rgba(0,0,0,0.8);
+    transition: color 0.4s, text-shadow 0.4s;
+  }
+  .subtitle{
+    text-align:center;
+    font-size:12px;
+    color:rgba(242,237,225,0.7);
+    letter-spacing:1.5px;
+    margin-bottom:20px;
+    text-shadow:0 1px 2px rgba(0,0,0,0.8);
+  }
+
+  .card{
+    background:var(--panel);
+    backdrop-filter:blur(16px);
+    border:1px solid var(--team-accent);
+    border-radius:20px;
+    padding:22px;
+    box-shadow:0 25px 50px -12px rgba(0,0,0,0.9), 0 0 25px var(--team-glow);
+    transition: border-color 0.4s, box-shadow 0.4s;
+  }
+  .field-row{margin-bottom:16px;}
+  .field-row label{
+    display:block;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:rgba(242,237,225,0.75);
+    margin-bottom:6px;
+  }
+  .select-group{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .team-logo-badge{
+    width:46px;
+    height:46px;
+    flex-shrink:0;
+    border-radius:50%;
+    background:rgba(0,0,0,0.5);
+    padding:5px;
+    border:2px solid var(--team-accent);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 0 12px var(--team-glow);
+  }
+  .team-logo-badge svg{
+    width:100%;
+    height:100%;
+  }
+  select{
+    flex:1;
+    padding:12px 14px;
+    background:#081712;
+    border:1px solid var(--line);
+    border-radius:10px;
+    color:var(--chalk);
+    font-size:15px;
+    font-weight:700;
+    outline:none;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .stadium-preview-card{
+    margin:16px 0 20px;
+    padding:16px;
+    background:linear-gradient(135deg, rgba(0,0,0,0.6), rgba(8,24,18,0.8));
+    border-radius:14px;
+    border:1px solid var(--team-accent);
+    display:flex;
+    align-items:center;
+    gap:16px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.6), inset 0 0 15px var(--team-glow);
+  }
+  .stadium-icon{
+    font-size:32px;
+    width:52px;
+    height:52px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.1);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .stadium-info-text{
+    flex:1;
+  }
+  .stadium-title{
+    font-size:16px;
+    font-weight:900;
+    color:var(--team-accent);
+    margin-bottom:4px;
+    text-shadow:0 0 10px var(--team-glow);
+  }
+  .stadium-desc{
+    font-size:12px;
+    color:rgba(242,237,225,0.8);
+    line-height:1.45;
+  }
+
+  .lineup-preview{
+    margin-top:8px;
+    font-size:12px;
+    color:rgba(242,237,225,0.7);
+    line-height:1.6;
+    padding:10px 12px;
+    background:rgba(0,0,0,0.35);
+    border-radius:8px;
+    border-left:4px solid var(--team-accent);
+  }
+  .lineup-preview b{color:var(--team-accent);}
+  
+  button.primary{
+    width:100%;
+    margin-top:10px;
+    padding:16px;
+    border:none;
+    border-radius:12px;
+    background:linear-gradient(180deg, #ffffff 0%, var(--team-accent) 100%);
+    color:#050e0b;
+    font-weight:900;
+    font-size:17px;
+    letter-spacing:1px;
+    cursor:pointer;
+    box-shadow:0 10px 25px -5px var(--team-glow);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  button.primary:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 30px -4px var(--team-glow);
+  }
+  button.primary:active{transform:translateY(1px);}
+  .vs-badge{
+    text-align:center;
+    font-size:12px;
+    letter-spacing:4px;
+    color:rgba(242,237,225,0.4);
+    margin:6px 0 16px;
+    font-weight:800;
+  }
+
+  #gameScreen{display:none;}
+  .scoreboard{
+    background:linear-gradient(180deg,rgba(10,28,22,0.95),rgba(5,15,12,0.98));
+    border:1px solid var(--team-accent);
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:16px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.8), 0 0 15px var(--team-glow);
+  }
+  .sb-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+  }
+  .inning-tag{
+    font-size:13px;
+    font-weight:800;
+    letter-spacing:1px;
+    color:var(--team-accent);
+    background:rgba(255,206,84,0.12);
+    padding:5px 12px;
+    border-radius:20px;
+    border:1px solid rgba(255,206,84,0.25);
+  }
+  .teams-score{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin:8px 0 14px;
+  }
+  .team-block{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .team-header-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .sb-logo-mini{
+    width:24px;
+    height:24px;
+  }
+  .team-name{
+    font-size:14px;
+    font-weight:800;
+    letter-spacing:0.5px;
+    color:rgba(242,237,225,0.95);
+  }
+  .team-block.away .team-name{color:#ff7b72;}
+  .team-block.home .team-name{color:#79c0ff;}
+  .team-score{
+    font-family:'Courier New', monospace;
+    font-size:40px;
+    font-weight:900;
+    line-height:1.1;
+    margin-top:2px;
+    text-shadow:0 0 10px rgba(255,255,255,0.2);
+  }
+  .score-sep{font-size:22px;color:rgba(242,237,225,0.3);font-weight:300;}
+
+  .pitcher-status-bar{
+    display:flex; 
+    justify-content:space-between; 
+    padding:8px 12px; 
+    background:rgba(0,0,0,0.4); 
+    border-radius:10px; 
+    margin-bottom:12px; 
+    font-size:12px; 
+    border:1px solid rgba(255,255,255,0.08);
+  }
+
+  .runners-panel{
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    background:rgba(0, 0, 0, 0.45);
+    border:1px solid var(--team-accent);
+    border-radius:10px;
+    padding:10px;
+    margin-bottom:12px;
+    font-size:12.5px;
+    box-shadow:inset 0 0 10px rgba(0,0,0,0.6);
+  }
+  .runner-item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .runner-badge{
+    width:22px;
+    height:22px;
+    line-height:22px;
+    text-align:center;
+    border-radius:5px;
+    font-weight:900;
+    font-size:11px;
+    background:#1c2d26;
+    color:rgba(242,237,225,0.4);
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  .runner-badge.active{
+    background:var(--team-accent);
+    color:#000;
+    box-shadow:0 0 10px var(--team-glow);
+    border-color:var(--team-accent);
+  }
+  .runner-name{
+    font-weight:700;
+    color:rgba(242,237,225,0.95);
+  }
+
+  .status-row{
+    display:flex;
+    gap:16px;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .pips-group{display:flex;align-items:center;gap:6px;}
+  .pips-label{font-size:11px;font-weight:800;color:rgba(242,237,225,0.6);letter-spacing:1px;}
+  .pip{
+    width:12px;height:12px;border-radius:50%;
+    border:1.5px solid rgba(242,237,225,0.3);
+  }
+  .pip.filled-ball{background:#00e676;border-color:#00e676;box-shadow:0 0 6px #00e676;}
+  .pip.filled-strike{background:var(--lights);border-color:var(--lights);box-shadow:0 0 6px var(--lights);}
+  .pip.filled-out{background:var(--away);border-color:var(--away);box-shadow:0 0 6px var(--away);}
+
+  .diamond-wrap{
+    width:100%;
+    height:390px;
+    margin-bottom:14px;
+    border:1px solid var(--team-accent);
+    border-radius:14px;
+    overflow:hidden;
+    background:#020806;
+    display:flex; 
+    box-shadow:0 10px 25px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.9);
+  }
+  #threeContainer{
+    flex:1;
+    height:100%;
+    position:relative;
+    overflow:hidden;
+  }
+  #threeContainer canvas {
+    position:absolute;
+    top:0;
+    left:0;
+    width:100% !important;
+    height:100% !important;
+    display:block;
+  }
+  
+  .camera-controls{
+    position:absolute;
+    top:10px;
+    left:10px;
+    z-index:15;
+    display:flex;
+    gap:6px;
+  }
+  .cam-btn{
+    background:rgba(5, 15, 12, 0.85);
+    border:1px solid var(--team-accent);
+    color:var(--chalk);
+    padding:5px 9px;
+    font-size:11px;
+    font-weight:800;
+    border-radius:6px;
+    cursor:pointer;
+    backdrop-filter:blur(6px);
+    transition:all 0.2s ease;
+  }
+  .cam-btn.active, .cam-btn:hover{
+    background:var(--team-accent);
+    color:#000;
+    box-shadow:0 0 10px var(--team-glow);
+  }
+
+  /* ABS 방송용 세로 비율 존 패널 */
+  .abs-panel{
+    width:130px;
+    height:100%;
+    background:linear-gradient(180deg, #050d0a, #020705);
+    border-left:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:10px 6px;
+    flex-shrink:0;
+  }
+  .abs-title{
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:1.5px;
+    color:var(--team-accent);
+    margin-bottom:8px;
+    text-transform:uppercase;
+    text-shadow:0 0 8px var(--team-glow);
+  }
+  #absCanvas{
+    background:#010504;
+    border:1px solid rgba(255,206,84,0.35);
+    border-radius:6px;
+    box-shadow:inset 0 0 12px rgba(0,0,0,0.95);
+  }
+  .abs-info{
+    font-size:10px;
+    color:rgba(242,237,225,0.8);
+    margin-top:10px;
+    text-align:center;
+    line-height:1.35;
+    min-height:30px;
+  }
+
+  .commentary{
+    background:rgba(0,0,0,0.3);
+    border-left:4px solid var(--team-accent);
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:14px;
+    font-weight:600;
+    line-height:1.5;
+    min-height:46px;
+    margin-bottom:6px;
+  }
+  .log-mini{
+    font-size:11.5px;
+    color:rgba(242,237,225,0.45);
+    padding:0 4px 4px;
+    max-height:56px;
+    overflow-y:auto;
+  }
+
+  .action-panel{
+    background:var(--panel);
+    backdrop-filter:blur(16px);
+    border:1px solid var(--team-accent);
+    border-radius:16px;
+    padding:20px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.8);
+  }
+  .role-tag{
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--team-accent);
+    margin-bottom:6px;
+    font-weight:800;
+    text-shadow:0 0 8px var(--team-glow);
+  }
+  .role-desc{
+    font-size:14px;
+    color:rgba(242,237,225,0.9);
+    margin-bottom:16px;
+    line-height:1.5;
+  }
+  .role-desc b{color:var(--chalk);}
+  .choice-btn{
+    display:block;
+    width:100%;
+    text-align:left;
+    padding:13px 16px;
+    margin-bottom:10px;
+    background:linear-gradient(90deg, #0b1f1a, #0d2821);
+    border:1px solid var(--line);
+    border-radius:10px;
+    color:var(--chalk);
+    font-size:14.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background 0.2s, border-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  }
+  .choice-btn:hover{
+    background:linear-gradient(90deg, #12332a, #163d32);
+    border-color:var(--team-accent);
+    box-shadow:0 4px 15px var(--team-glow);
+  }
+  .choice-btn:active{transform:scale(0.98);}
+  .choice-num{
+    display:inline-block;
+    width:22px;height:22px;
+    line-height:22px;
+    text-align:center;
+    border-radius:50%;
+    background:var(--team-accent);
+    color:#000;
+    font-weight:900;
+    font-size:12px;
+    margin-right:12px;
+  }
+
+  #endScreen{display:none;text-align:center;}
+  .end-title{font-size:28px;font-weight:900;color:var(--team-accent);margin-bottom:6px;text-shadow:0 0 15px var(--team-glow);}
+  .end-sub{font-size:14px;color:rgba(242,237,225,0.8);margin-bottom:22px;}
+  .final-score{
+    font-family:'Courier New',monospace;
+    font-size:36px;font-weight:900;
+    margin-bottom:24px;
+  }
+  button.secondary{
+    padding:14px 26px;
+    border:2px solid var(--team-accent);
+    background:transparent;
+    color:var(--team-accent);
+    border-radius:10px;
+    font-weight:800;
+    font-size:15px;
+    cursor:pointer;
+    transition:background 0.2s;
+  }
+  button.secondary:hover{
+    background:var(--team-accent);
+    color:#000;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="title">⚾ KBO 야구 게임 마스터</h1>
+  <div class="subtitle">2026 프로시즌 · 구단별 공식 로고 및 홈구장 비주얼 테마 연동</div>
+
+  <div id="selectScreen" class="card">
+    <div class="field-row">
+      <label>플레이어 팀 (홈 · 1회말 공격)</label>
+      <div class="select-group">
+        <div class="team-logo-badge" id="homeLogoBadge"></div>
+        <select id="homeSelect"></select>
+      </div>
+      <div class="lineup-preview" id="homePreview"></div>
+    </div>
+
+    <div class="stadium-preview-card">
+      <div class="stadium-icon" id="stadiumIcon">🏟️</div>
+      <div class="stadium-info-text">
+        <div class="stadium-title" id="stadiumTitle">홈구장 선택 중...</div>
+        <div class="stadium-desc" id="stadiumDesc">플레이어 팀의 전용 구장 3D 모델 및 구단 상징색 테마가 설정됩니다.</div>
+      </div>
+    </div>
+
+    <div class="field-row" style="margin-top:10px;">
+      <label>플레이어 등판 선발 투수 선택 (1~5선발)</label>
+      <select id="pitcherSelect"></select>
+    </div>
+
+    <div class="vs-badge">V S</div>
+
+    <div class="field-row">
+      <label>원정 팀 (AI · 1회초 공격)</label>
+      <div class="select-group">
+        <div class="team-logo-badge" id="awayLogoBadge"></div>
+        <select id="awaySelect"></select>
+      </div>
+      <div class="lineup-preview" id="awayPreview"></div>
+    </div>
+
+    <button class="primary" id="startBtn">경기 시작 ▶ 1회초</button>
+  </div>
+
+  <div id="gameScreen">
+    <div class="scoreboard">
+      <div class="sb-top">
+        <span class="inning-tag" id="inningTag">1회초</span>
+        <span class="inning-tag" id="halfTag">원정 공격 · 플레이어 수비</span>
+      </div>
+      <div class="teams-score">
+        <div class="team-block away">
+          <div class="team-header-row">
+            <div class="sb-logo-mini" id="sbAwayLogo"></div>
+            <div class="team-name" id="awayNameTag">원정</div>
+          </div>
+          <div class="team-score" id="awayScoreTag">0</div>
+        </div>
+        <div class="score-sep">–</div>
+        <div class="team-block home">
+          <div class="team-header-row">
+            <div class="sb-logo-mini" id="sbHomeLogo"></div>
+            <div class="team-name" id="homeNameTag">홈</div>
+          </div>
+          <div class="team-score" id="homeScoreTag">0</div>
+        </div>
+      </div>
+
+      <div class="pitcher-status-bar">
+        <div>🔴 투수: <b id="awayPitcherTag" style="color:#ff7b72;">투수</b> (<span id="awayStaminaTag" style="font-weight:700;">100%</span>, 투구수: <span id="awayPitchesTag" style="font-weight:700; color:#ffdd7a;">0</span>)</div>
+        <div>🔵 투수: <b id="homePitcherTag" style="color:#79c0ff;">투수</b> (<span id="homeStaminaTag" style="font-weight:700;">100%</span>, 투구수: <span id="homePitchesTag" style="font-weight:700; color:#ffdd7a;">0</span>)</div>
+      </div>
+
+      <div class="runners-panel">
+        <div class="runner-item">
+          <div class="runner-badge" id="b1Badge">1B</div>
+          <span class="runner-name" id="b1Name">비어있음</span>
+        </div>
+        <div class="runner-item">
+          <div class="runner-badge" id="b2Badge">2B</div>
+          <span class="runner-name" id="b2Name">비어있음</span>
+        </div>
+        <div class="runner-item">
+          <div class="runner-badge" id="b3Badge">3B</div>
+          <span class="runner-name" id="b3Name">비어있음</span>
+        </div>
+      </div>
+
+      <div class="status-row">
+        <div class="pips-group">
+          <span class="pips-label">B</span>
+          <div class="pip" id="ball0"></div><div class="pip" id="ball1"></div><div class="pip" id="ball2"></div>
+        </div>
+        <div class="pips-group">
+          <span class="pips-label">S</span>
+          <div class="pip" id="strike0"></div><div class="pip" id="strike1"></div>
+        </div>
+        <div class="pips-group">
+          <span class="pips-label">OUT</span>
+          <div class="pip" id="out0"></div><div class="pip" id="out1"></div>
+        </div>
+      </div>
+      
+      <div class="diamond-wrap">
+        <div id="threeContainer">
+          <div class="camera-controls">
+            <button class="cam-btn active" id="camBroadcastBtn" onclick="setCameraView('broadcast')">🎥 방송 시점</button>
+            <button class="cam-btn" id="camPitcherBtn" onclick="setCameraView('pitcher')">⚾ 투수 시점</button>
+            <button class="cam-btn" id="camCatcherBtn" onclick="setCameraView('catcher')">🧤 포수 시점</button>
+          </div>
+        </div>
+        <div class="abs-panel">
+          <div class="abs-title">ABS 존</div>
+          <canvas id="absCanvas" width="110" height="150"></canvas>
+          <div class="abs-info" id="absInfo">판정 대기 중</div>
+        </div>
+      </div>
+
+      <div class="commentary" id="commentary">경기가 곧 시작됩니다...</div>
+      <div class="log-mini" id="logMini"></div>
+    </div>
+
+    <div class="action-panel">
+      <div class="role-tag" id="roleTag">투구 선택</div>
+      <div class="role-desc" id="roleDesc"></div>
+      <div id="choiceButtons"></div>
+    </div>
+  </div>
+
+  <div id="endScreen" class="card">
+    <div class="end-title" id="endTitle">경기 종료</div>
+    <div class="end-sub" id="endSub"></div>
+    <div class="final-score" id="finalScore"></div>
+    <button class="secondary" id="restartBtn">팀 다시 선택하기</button>
+  </div>
+</div>
+
+<script>
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function playSound(type) {
+  try {
+    initAudio();
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+
+    if (type === 'pitch') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.35);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.35);
+    } 
+    else if (type === 'catch') {
+      const bufferSize = audioCtx.sampleRate * 0.08;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.012));
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 650;
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(0.5, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+      noise.start(now);
+    } 
+    else if (type === 'hit') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(850, now);
+      osc.frequency.exponentialRampToValueAtTime(180, now + 0.15);
+      gain.gain.setValueAtTime(0.7, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.15);
+
+      const bufferSize = audioCtx.sampleRate * 0.04;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(0.6, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      noise.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+      noise.start(now);
+    } 
+    else if (type === 'homerun') {
+      playSound('hit');
+      setTimeout(() => playSound('cheer'), 120);
+    } 
+    else if (type === 'cheer') {
+      const dur = 2.2;
+      const bufferSize = audioCtx.sampleRate * dur;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1);
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(550, now);
+      filter.Q.value = 1.8;
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(0.01, now);
+      noiseGain.gain.linearRampToValueAtTime(0.3, now + 0.5);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+      noise.start(now);
+    } 
+    else if (type === 'strike') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(480, now);
+      osc.frequency.setValueAtTime(680, now + 0.08);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.22);
+    } 
+    else if (type === 'ball') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(240, now);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.18);
+    }
+  } catch(e) {}
+}
+
+const TEAM_LOGOS = {
+  "KIA 타이거즈": `<svg viewBox="0 0 100 100"><path d="M20 25 L80 25 L90 40 L50 90 L10 40 Z" fill="#c8102e"/><path d="M30 15 L70 15 L75 25 L25 25 Z" fill="#111111"/><text x="50" y="52" fill="#ffffff" font-size="16" font-weight="900" text-anchor="middle">KIA</text><text x="50" y="70" fill="#ffffff" font-size="12" font-weight="800" text-anchor="middle">TIGERS</text></svg>`,
+  "삼성 라이온즈": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#074ca1" stroke="#ffffff" stroke-width="4"/><path d="M25 48 C 35 25, 65 25, 75 48 C 65 72, 35 72, 25 48 Z" fill="none" stroke="#ffffff" stroke-width="3"/><text x="50" y="55" fill="#ffffff" font-size="20" font-weight="900" font-style="italic" text-anchor="middle">Lions</text></svg>`,
+  "LG 트윈스": `<svg viewBox="0 0 100 100"><path d="M10 25 Q 50 5, 90 25 L 90 38 Q 50 18, 10 38 Z" fill="#c8102e"/><path d="M10 38 Q 50 18, 90 38 L 80 85 L 20 85 Z" fill="#111111"/><text x="50" y="58" fill="#c8102e" font-size="20" font-weight="900" text-anchor="middle">TWINS</text><text x="50" y="75" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle">SEOUL</text></svg>`,
+  "두산 베어스": `<svg viewBox="0 0 100 100"><polygon points="50,8 92,50 50,92 8,50" fill="#131a2e" stroke="#c8102e" stroke-width="4"/><path d="M20 28 Q 50 18 80 28 L 75 38 Q 50 28 25 38 Z" fill="#c8102e"/><text x="50" y="58" fill="#ffffff" font-size="21" font-weight="900" font-style="italic" text-anchor="middle">Bears</text></svg>`,
+  "kt wiz": `<svg viewBox="0 0 100 100"><path d="M15 20 L85 20 L92 50 L50 88 L8 50 Z" fill="#1a1a1a" stroke="#d32f2f" stroke-width="3"/><path d="M35 12 C 45 2, 65 2, 75 18 C 60 22, 40 18, 35 12 Z" fill="#d32f2f"/><text x="50" y="54" fill="#ffffff" font-size="21" font-weight="900" text-anchor="middle">kt wiz</text></svg>`,
+  "SSG 랜더스": `<svg viewBox="0 0 100 100"><path d="M10 30 Q 50 10 90 30 L 85 80 Q 50 95 15 80 Z" fill="#9b111e"/><text x="50" y="48" fill="#ffffff" font-size="14" font-weight="900" text-anchor="middle">SSG</text><text x="50" y="68" fill="#ffffff" font-size="16" font-weight="900" font-style="italic" text-anchor="middle">Landers</text></svg>`,
+  "롯데 자이언츠": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#0c2340" stroke="#d32f2f" stroke-width="4"/><text x="50" y="44" fill="#d32f2f" font-size="10" font-weight="800" text-anchor="middle">LOTTE</text><text x="50" y="66" fill="#ffffff" font-size="20" font-weight="900" font-style="italic" text-anchor="middle">Giants</text></svg>`,
+  "한화 이글스": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#f26522"/><circle cx="50" cy="50" r="32" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="4,4"/><text x="50" y="42" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">Hanwha</text><text x="50" y="64" fill="#111111" font-size="20" font-weight="900" font-style="italic" text-anchor="middle">Eagles</text></svg>`,
+  "NC 다이노스": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#0f2a4a" stroke="#c49a6c" stroke-width="4"/><text x="50" y="44" fill="#c49a6c" font-size="16" font-weight="900" text-anchor="middle">NC</text><text x="50" y="68" fill="#ffffff" font-size="20" font-weight="900" font-style="italic" text-anchor="middle">DINOS</text></svg>`,
+  "키움 히어로즈": `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#581825" stroke="#ffffff" stroke-width="3"/><text x="50" y="44" fill="#ffffff" font-size="9" font-weight="800" text-anchor="middle">KIWOOM</text><text x="50" y="66" fill="#ff5252" font-size="18" font-weight="900" font-style="italic" text-anchor="middle">HEROES</text></svg>`
+};
+
+const STADIUM_DATA = {
+  "KIA 타이거즈": { name: "광주-기아 챔피언스 필드", desc: "클래식 메이저리그 스타일, 레드 외야 펜스 및 파노라마 외야 스탠드", radius: 56.0, wallHeight: 3.2, accentColor: 0xc8102e, seatColor: 0x9e0b23, themeColor: "#c8102e", themeGlow: "rgba(200,16,46,0.5)", isDome: false },
+  "삼성 라이온즈": { name: "대구 삼성 라이온즈 파크", desc: "팔각 직각 외야 펜스 감성 및 웅장한 블루 스탠드 구조물", radius: 56.0, wallHeight: 3.6, accentColor: 0x074ca1, seatColor: 0x053a7a, themeColor: "#074ca1", themeGlow: "rgba(7,76,161,0.5)", isDome: false },
+  "LG 트윈스": { name: "서울 잠실 야구장 (LG)", desc: "중앙 125m 국내 최대 웅장한 필드, 웅장한 외야 관중석 스탠드", radius: 58.0, wallHeight: 2.8, accentColor: 0xc8102e, seatColor: 0x1a2b4c, themeColor: "#c8102e", themeGlow: "rgba(200,16,46,0.5)", isDome: false },
+  "두산 베어스": { name: "서울 잠실 야구장 (두산)", desc: "광활한 중앙 외야와 깊은 좌우 펜스, 딥 네이비 관중석 테마", radius: 58.0, wallHeight: 2.8, accentColor: 0x131a2e, seatColor: 0x0f182b, themeColor: "#131a2e", themeGlow: "rgba(19,26,46,0.6)", isDome: false },
+  "kt wiz": { name: "수원 KT 위즈 파크", desc: "위즈 레드 펜스 및 외야 우중간 특수 구조물 '위즈 타워(Wiz Tower)'", radius: 55.0, wallHeight: 3.5, accentColor: 0xd32f2f, seatColor: 0x222222, themeColor: "#d32f2f", themeGlow: "rgba(211,47,47,0.5)", isDome: false },
+  "SSG 랜더스": { name: "인천 SSG 랜더스필드", desc: "세계 최대급 초고화질 3D 빅보드 전광판 및 외야 패밀리존 파크", radius: 55.0, wallHeight: 3.0, accentColor: 0x9b111e, seatColor: 0x800e18, themeColor: "#9b111e", themeGlow: "rgba(155,17,30,0.5)", isDome: false },
+  "롯데 자이언츠": { name: "부산 사직 야구장", desc: "외야 전체를 둘러싼 높은 거대 '사직 몬스터' 그린 특수 펜스", radius: 56.0, wallHeight: 4.8, accentColor: 0x113059, seatColor: 0x0c2340, themeColor: "#0c2340", themeGlow: "rgba(12,35,64,0.6)", isDome: false },
+  "한화 이글스": { name: "대전 한화생명 볼파크", desc: "오렌지 테마, 외야 파크존 및 대형 3D 한화 몬스터월 펜스 연동", radius: 55.0, wallHeight: 3.8, accentColor: 0xf26522, seatColor: 0xd45013, themeColor: "#f26522", themeGlow: "rgba(242,101,34,0.5)", isDome: false },
+  "NC 다이노스": { name: "창원 NC 파크", desc: "메이저리그급 완경사 외야 파크 스탠드, 민트&네이비 테마", radius: 56.0, wallHeight: 3.3, accentColor: 0x00a8b5, seatColor: 0x0f2a4a, themeColor: "#00a8b5", themeGlow: "rgba(0,168,181,0.5)", isDome: false },
+  "키움 히어로즈": { name: "고척 스카이돔", desc: "국내 유일의 돔구장: 반투명 돔 지붕 + 천장 서클 링 조명", radius: 55.0, wallHeight: 3.8, accentColor: 0x581825, seatColor: 0x42121b, themeColor: "#581825", themeGlow: "rgba(88,24,37,0.6)", isDome: true }
+};
+
+const UNIFORM_DATA = {
+  "KIA 타이거즈": { home: { jersey: 0xffffff, pants: 0xf5f5f5, cap: 0xc8102e, visor: 0x111111, sleeve: 0xc8102e, belt: 0x111111, socks: 0xc8102e }, away: { jersey: 0xc8102e, pants: 0xeeeeee, cap: 0x111111, visor: 0xc8102e, sleeve: 0x111111, belt: 0x111111, socks: 0x111111 } },
+  "삼성 라이온즈": { home: { jersey: 0xffffff, pants: 0xf5f5f5, cap: 0x074ca1, visor: 0x074ca1, sleeve: 0x074ca1, belt: 0x074ca1, socks: 0x074ca1 }, away: { jersey: 0x074ca1, pants: 0xffffff, cap: 0x074ca1, visor: 0x002d62, sleeve: 0x002d62, belt: 0x002d62, socks: 0x074ca1 } },
+  "LG 트윈스": { home: { jersey: 0xffffff, pants: 0xf0f0f0, cap: 0x111111, visor: 0xc8102e, sleeve: 0x111111, belt: 0x111111, socks: 0xc8102e }, away: { jersey: 0x222222, pants: 0xe0e0e0, cap: 0x111111, visor: 0xc8102e, sleeve: 0xc8102e, belt: 0x111111, socks: 0x111111 } },
+  "두산 베어스": { home: { jersey: 0xffffff, pants: 0xf5f5f5, cap: 0x131a2e, visor: 0x131a2e, sleeve: 0x131a2e, belt: 0xc8102e, socks: 0x131a2e }, away: { jersey: 0x131a2e, pants: 0xffffff, cap: 0x131a2e, visor: 0xc8102e, sleeve: 0x131a2e, belt: 0xc8102e, socks: 0x131a2e } },
+  "kt wiz": { home: { jersey: 0xffffff, pants: 0xf5f5f5, cap: 0x1a1a1a, visor: 0xd32f2f, sleeve: 0x1a1a1a, belt: 0xd32f2f, socks: 0xd32f2f }, away: { jersey: 0x1a1a1a, pants: 0xeeeeee, cap: 0x1a1a1a, visor: 0xd32f2f, sleeve: 0xd32f2f, belt: 0xd32f2f, socks: 0x1a1a1a } },
+  "SSG 랜더스": { home: { jersey: 0xffffff, pants: 0xf5f5f5, cap: 0x9b111e, visor: 0x9b111e, sleeve: 0x9b111e, belt: 0x9b111e, socks: 0x9b111e }, away: { jersey: 0x9b111e, pants: 0xffffff, cap: 0x9b111e, visor: 0x111111, sleeve: 0x111111, belt: 0x111111, socks: 0x9b111e } },
+  "롯데 자이언츠": { home: { jersey: 0xffffff, pants: 0xf5f5f5, cap: 0x0c2340, visor: 0x0c2340, sleeve: 0x0c2340, belt: 0xd32f2f, socks: 0x0c2340 }, away: { jersey: 0x0c2340, pants: 0xffffff, cap: 0x0c2340, visor: 0xd32f2f, sleeve: 0xd32f2f, belt: 0xd32f2f, socks: 0x0c2340 } },
+  "한화 이글스": { home: { jersey: 0xffffff, pants: 0xf5f5f5, cap: 0xf26522, visor: 0x222222, sleeve: 0xf26522, belt: 0x222222, socks: 0xf26522 }, away: { jersey: 0x222222, pants: 0xe5e5e5, cap: 0x222222, visor: 0xf26522, sleeve: 0xf26522, belt: 0xf26522, socks: 0x222222 } },
+  "NC 다이노스": { home: { jersey: 0xffffff, pants: 0xf5f5f5, cap: 0x0f2a4a, visor: 0x0f2a4a, sleeve: 0x0f2a4a, belt: 0x00a8b5, socks: 0x0f2a4a }, away: { jersey: 0x0f2a4a, pants: 0xffffff, cap: 0x0f2a4a, visor: 0x00a8b5, sleeve: 0x00a8b5, belt: 0x00a8b5, socks: 0x00a8b5 } },
+  "키움 히어로즈": { home: { jersey: 0xffffff, pants: 0xf5f5f5, cap: 0x581825, visor: 0x581825, sleeve: 0x581825, belt: 0x581825, socks: 0x581825 }, away: { jersey: 0x581825, pants: 0xeeeeee, cap: 0x581825, visor: 0x581825, sleeve: 0x222222, belt: 0x222222, socks: 0x581825 } }
+};
+
+const TYPE_MODIFIER = {
+  "교타자형": { single: 1.35, double: 1.1, homerun: 0.5, strike_swinging: 0.8, out: 0.9, speed: 85 },
+  "거포형": { single: 0.8, double: 1.25, homerun: 2.3, strike_swinging: 1.4, out: 1.0, speed: 60 },
+  "밸런스형": { single: 1.0, double: 1.0, homerun: 1.0, strike_swinging: 1.0, out: 1.0, speed: 75 },
+  "수비형": { single: 0.85, double: 0.8, homerun: 0.35, strike_swinging: 1.15, out: 1.1, speed: 70 },
+  "약체형": { single: 0.65, double: 0.55, homerun: 0.15, strike_swinging: 1.5, out: 1.25, speed: 65 }
+};
+
+const PITCH_BASE = {
+  1: [
+    ['ball', 25], ['strike_looking', 25], ['strike_swinging', 15],
+    ['foul', 15], ['out', 12], ['single', 6], ['double', 1.5], ['triple', 0.2], ['homerun', 0.3]
+  ],
+  2: [
+    ['ball', 62], ['strike_swinging', 20], ['foul', 8],
+    ['out', 7], ['single', 2.5], ['double', 0.4], ['triple', 0.05], ['homerun', 0.05]
+  ],
+  3: [
+    ['ball', 10], ['strike_looking', 10], ['strike_swinging', 20],
+    ['foul', 20], ['out', 23], ['single', 11], ['double', 4], ['triple', 0.8], ['homerun', 1.2]
+  ]
+};
+
+const BAT_TABLE = {
+  1: {
+    strike: [['strike_swinging', 26],['foul', 18],['out', 24],['single', 14],['double', 9],['triple', 1.5],['homerun', 7.5]],
+    ball: [['ball', 38],['strike_swinging', 36],['foul', 15],['out', 7],['single', 3.3],['double', 0.5],['triple', 0.1],['homerun', 0.1]]
+  },
+  2: {
+    strike: [['strike_looking', 76],['strike_swinging', 10],['foul', 7],['out', 5],['single', 1.5],['double', 0.4],['triple', 0.05],['homerun', 0.05]],
+    ball: [['ball', 93],['strike_swinging', 3],['foul', 3],['out', 0.8],['single', 0.15],['double', 0.04],['triple', 0.005],['homerun', 0.005]]
+  },
+  3: {
+    strike: [['strike_swinging', 8],['foul', 43],['out', 29],['single', 17.5],['double', 2.0],['triple', 0.3],['homerun', 0.2]],
+    ball: [['ball', 66],['strike_swinging', 9],['foul', 18],['out', 5],['single', 1.8],['double', 0.18],['triple', 0.01],['homerun', 0.01]]
+  }
+};
+
+const FLAVOR = {
+  ball: ["낮게 존을 벗어나는 공, 타자 골라냅니다. 볼!", "바깥쪽 변화구가 빠집니다. 볼입니다.", "투구 유인구를 잘 참아내는 타자.", "높게 벗어나는 하이 패스트볼, 볼 선언입니다."],
+  strike_looking: ["스트라이크! 타자 배트도 내밀지 못합니다.", "정교하게 보더라인에 걸치는 공! 루킹 스트라이크!", "꽉 찬 직구 통과, 판정은 스트라이크입니다.", "투수 자신 있게 몸쪽을 찔러 스트라이크를 가져옵니다."],
+  strike_swinging: ["헛스윙! 타이밍이 다소 늦었습니다.", "예리한 종변화구에 속아 헛스윙을 기록합니다.", "구위가 뛰어납니다, 배트가 힘없이 돌았습니다.", "체인지업에 상체가 무너지며 헛스윙!"],
+  strikeout: ["삼진아웃! 결정구가 완벽히 먹혀 들어갔습니다!", "서서 삼진! 투수가 승부처를 완벽히 통제했습니다.", "헛스윙 삼진! 이닝을 매끄럽게 요리하는 투수.", "스트라이크 존을 완전히 뺏는 투구로 삼진 탈취!"],
+  foul: ["빗맞은 타구, 3루측 파울라인을 벗어납니다.", "뒤쪽 그물망을 때리는 파울 타구.", "타이밍을 맞추기 위해 커트해냅니다. 파울!", "큰 궤적을 그렸으나 오른쪽 담장 밖 파울 존에 떨어집니다."],
+  out: ["잘 맞은 타구였으나 수비수 정면으로 향해 아웃입니다.", "평범하게 뜬 타구, 외야수가 콜하고 대기 후 잡아냅니다.", "내야 땅볼! 유격수가 부드러운 핸들링으로 아웃을 올립니다.", "중견수 뜬공 아웃으로 타석이 정리됩니다."],
+  double_play: ["아, 최악의 땅볼 타구! 2루를 거쳐 1루까지 병살타가 선언됩니다!", "유격수 포구 후 2루 송구, 그리고 1루까지 순식간에 아웃카운트 두 개!", "더블 플레이! 기회를 단번에 무산시키는 유격수 수비 플레이입니다."],
+  walk: ["볼넷! 침착하게 걸어서 1루로 출루합니다.", "끈질긴 대결 끝에 볼을 가려내어 베이스를 채웁니다.", "투수 제구 난조로 사사구 허용, 1루로 향합니다."],
+  single: ["안타! 수비수 키를 깔끔하게 넘기는 중전 안타!", "배트 중심에 완벽히 맞은 우전 안타가 터집니다.", "기습적인 좌익수 앞 안타로 주자 베이스를 밟습니다.", "내야를 깨끗하게 뚫는 적시 안타!"],
+  double: ["라인선상 깊은 코스! 주자 속도를 올려 2루까지 세이프! 2루타!", "외야 펜스를 직접 강타하는 큼지막한 장타, 2루타입니다!", "좌중간 완전히 가르는 장쾌한 타구로 2루타 완성!"],
+  triple: ["우익수 옆을 완전히 가르는 공! 주자가 폭주하여 3루에 무사히 도착합니다. 3루타!", "펜스를 타고 흐르는 사이 주자 전력 질주, 극적인 3루타 작렬!"],
+  homerun: ["쳤습니다! 까마득히 뻗어가는 타구! 넘어갑니다! 담장 밖 대형 홈런!!! 🚀✨", "완벽한 포물선! 경기장을 열광의 도가니로 만드는 대형 솔로 홈런!", "투수의 실투를 통타하여 외야 장외 스탠드로 날려버리는 장쾌한 대형 홈런!"],
+  bunt_success: ["절묘한 기습 번트! 내야진이 당황하며 1루 세이프 내야안타!", "투수/포수 앞으로 굴러간 정교한 희생번트! 주자 진루 성공."],
+  bunt_out: ["포수가 기민하게 전진 포구 후 1루수에게 자비 없는 송구! 아웃!", "투수 빠르게 마운드를 내려와 1루 송구, 아웃 처리됩니다."],
+  steal_success: ["극적인 헤드퍼스트 슬라이딩! 포수의 송구를 뚫고 도루 성공!", "투수 동작을 완전히 읽었습니다! 극적인 도루 성공!"],
+  steal_out: ["포수 칼날 같은 2루 라이플 송구!! 도루 저지 성공, 완벽 태그아웃!", "무리한 도루 시도! 포수의 전광석화 송구에 태그아웃 당합니다!"],
+  pickoff_safe: ["투수의 기습 견제구! 주자 재빠르게 헤드퍼스트 슬라이딩 세이프!", "1루 견제구, 주자 여유 있게 베이스 귀루합니다."],
+  pickoff_out: ["아! 투수의 전격 견제구에 걸렸습니다! 견제사 아웃!", "투수의 속임 동작에 주자 완전히 낚였습니다, 견제아웃!"],
+  pickoff_wild: ["악송구! 견제구가 뒤로 빠지며 주자가 한 베이스씩 더 진루합니다!"]
+};
+
+const TEAMS = [
+  { name:"KIA 타이거즈", lineup:[{name:"김호령", pos:"CF", type:"교타자형"},{name:"박재현", pos:"LF", type:"교타자형"},{name:"김도영", pos:"3B", type:"밸런스형"},{name:"나성범", pos:"RF", type:"거포형"},{name:"카스트로", pos:"DH", type:"교타자형"},{name:"김선빈", pos:"2B", type:"교타자형"},{name:"변우혁", pos:"1B", type:"거포형"},{name:"김태군", pos:"C", type:"수비형"},{name:"박민", pos:"SS", type:"약체형"}], pitchers:{sp1:{name:"올러",type:"포심/스플리터",speed:147},sp2:{name:"시라카와",type:"포심/슬라이더",speed:149},sp3:{name:"네일",type:"투심/스위퍼",speed:148},sp4:{name:"양현종",type:"슬라이더/체인지업",speed:142},sp5:{name:"황동하",type:"포심/슬러브",speed:143},rp1:{name:"전상현",type:"포심/슬라이더",speed:145},rp2:{name:"최지민",type:"슬라이더",speed:145},rp3:{name:"곽도규",type:"투심/슬라이더",speed:147},closer:{name:"정해영",type:"포심/포크볼",speed:149}}},
+  { name:"삼성 라이온즈", lineup:[{name:"김지찬", pos:"CF", type:"교타자형"},{name:"김성윤", pos:"RF", type:"교타자형"},{name:"구자욱", pos:"LF", type:"밸런스형"},{name:"최형우", pos:"DH", type:"거포형"},{name:"디아즈", pos:"1B", type:"거포형"},{name:"류지혁", pos:"2B", type:"교타자형"},{name:"김영웅", pos:"3B", type:"거포형"},{name:"강민호", pos:"C", type:"밸런스형"},{name:"심재훈", pos:"SS", type:"약체형"}], pitchers:{sp1:{name:"양창섭",type:"슬라이더/스플리터",speed:141},sp2:{name:"원태인",type:"체인지업/컷패스트볼",speed:146},sp3:{name:"페덱",type:"컷패스트볼/체인지업",speed:148},sp4:{name:"최원태",type:"투심/슬라이더",speed:144},sp5:{name:"김백산",type:"포심/체인지업",speed:142},rp1:{name:"이승민",type:"슬라이더",speed:140},rp2:{name:"임기영",type:"체인지업",speed:139},rp3:{name:"배찬승",type:"포심/슬라이더",speed:146},closer:{name:"김재윤",type:"포심/포크볼",speed:147}}},
+  { name:"LG 트윈스", lineup:[{name:"홍창기", pos:"RF", type:"교타자형"},{name:"신민재", pos:"2B", type:"교타자형"},{name:"오스틴", pos:"1B", type:"거포형"},{name:"문보경", pos:"3B", type:"밸런스형"},{name:"박동원", pos:"C", type:"거포형"},{name:"문성주", pos:"LF", type:"교타자형"},{name:"오지환", pos:"SS", type:"밸런스형"},{name:"구본혁", pos:"DH", type:"수비형"},{name:"박해민", pos:"CF", type:"교타자형"}], pitchers:{sp1:{name:"톨허스트",type:"투심/슬라이더",speed:147},sp2:{name:"웰스",type:"체인지업/커브",speed:143},sp3:{name:"임찬규",type:"체인지업/커브",speed:142},sp4:{name:"송승기",type:"슬라이더/체인지업",speed:144},sp5:{name:"장현식",type:"슬라이더/포크볼",speed:148},rp1:{name:"김진성",type:"스플리터",speed:141},rp2:{name:"함덕주",type:"체인지업",speed:140},rp3:{name:"박명근",type:"슬라이더",speed:147},closer:{name:"유영찬",type:"포심/슬라이더",speed:149}}},
+  { name:"두산 베어스", lineup:[{name:"정수빈", pos:"CF", type:"교타자형"},{name:"박지훈", pos:"LF", type:"교타자형"},{name:"카메론", pos:"RF", type:"거포형"},{name:"양석환", pos:"1B", type:"거포형"},{name:"양의지", pos:"C", type:"밸런스형"},{name:"강승호", pos:"2B", type:"밸런스형"},{name:"김민혁", pos:"DH", type:"거포형"},{name:"이유찬", pos:"3B", type:"수비형"},{name:"전민재", pos:"SS", type:"약체형"}], pitchers:{sp1:{name:"벤자민",type:"커터/슬라이더",speed:146},sp2:{name:"곽빈",type:"슬라이더/포크볼",speed:149},sp3:{name:"최민석",type:"포심/슬라이더",speed:147},sp4:{name:"잭로그",type:"싱커/슬라이더",speed:144},sp5:{name:"최승용",type:"슬라이더/포크볼",speed:141},rp1:{name:"이병헌",type:"슬라이더",speed:147},rp2:{name:"최지강",type:"투심",speed:149},rp3:{name:"홍건희",type:"포심/슬라이더",speed:148},closer:{name:"김택연",type:"포심/슬라이더",speed:151}}},
+  { name:"kt wiz", lineup:[{name:"김민혁", pos:"LF", type:"교타자형"},{name:"김상수", pos:"2B", type:"교타자형"},{name:"허경민", pos:"3B", type:"밸런스형"},{name:"힐리어드", pos:"DH", type:"거포형"},{name:"장성우", pos:"C", type:"밸런스형"},{name:"안현민", pos:"RF", type:"거포형"},{name:"배정대", pos:"CF", type:"교타자형"},{name:"오윤석", pos:"1B", type:"수비형"},{name:"이강민", pos:"SS", type:"약체형"}], pitchers:{sp1:{name:"로건",type:"포심/슬라이더",speed:146},sp2:{name:"소형준",type:"투심/체인지업",speed:144},sp3:{name:"사우어",type:"커브/슬라이더",speed:145},sp4:{name:"고영표",type:"체인지업/투심",speed:138},sp5:{name:"배제성",type:"슬라이더",speed:143},rp1:{name:"손동현",type:"포심/슬라이더",speed:145},rp2:{name:"한승혁",type:"포심/스플리터",speed:151},rp3:{name:"우규민",type:"제구력/커브",speed:138},closer:{name:"박영현",type:"포심/체인지업",speed:148}}},
+  { name:"SSG 랜더스", lineup:[{name:"정준재", pos:"2B", type:"교타자형"},{name:"박성한", pos:"SS", type:"밸런스형"},{name:"고명준", pos:"3B", type:"밸런스형"},{name:"에레디아", pos:"LF", type:"교타자형"},{name:"김재환", pos:"DH", type:"거포형"},{name:"전의산", pos:"1B", type:"거포형"},{name:"이지영", pos:"C", type:"수비형"},{name:"최지훈", pos:"CF", type:"교타자형"},{name:"임근우", pos:"RF", type:"약체형"}], pitchers:{sp1:{name:"아빌라",type:"슬라이더/커브",speed:147},sp2:{name:"김민준",type:"슬라이더",speed:141},sp3:{name:"해치",type:"커터/싱커",speed:146},sp4:{name:"김건우",type:"포심/슬라이더",speed:143},sp5:{name:"타케다",type:"슬라이더/포크볼",speed:145},rp1:{name:"김민",type:"슬라이더",speed:150},rp2:{name:"노경은",type:"포크볼/슬라이더",speed:144},rp3:{name:"이로운",type:"포심",speed:148},closer:{name:"조병현",type:"포심/포크볼",speed:149}}},
+  { name:"롯데 자이언츠", lineup:[{name:"황성빈", pos:"CF", type:"교타자형"},{name:"고승민", pos:"1B", type:"밸런스형"},{name:"레이예스", pos:"LF", type:"교타자형"},{name:"한동희", pos:"DH", type:"거포형"},{name:"손호영", pos:"RF", type:"밸런스형"},{name:"전민재", pos:"SS", type:"교타자형"},{name:"한태양", pos:"2B", type:"수비형"},{name:"박찬형", pos:"3B", type:"수비형"},{name:"손성빈", pos:"C", type:"약체형"}], pitchers:{sp1:{name:"로드리게스",type:"포심/스플리터",speed:148},sp2:{name:"나균안",type:"포크볼/컷패스트볼",speed:143},sp3:{name:"김진욱",type:"슬라이더/커브",speed:144},sp4:{name:"비슬리",type:"컷패스트볼/체인지업",speed:147},sp5:{name:"박세웅",type:"슬라이더/스플리터",speed:146},rp1:{name:"진해수",type:"슬라이더",speed:138},rp2:{name:"한현희",type:"싱커/슬라이더",speed:146},rp3:{name:"구승민",type:"포크볼",speed:147},closer:{name:"김원중",type:"포크볼/포심",speed:148}}},
+  { name:"한화 이글스", lineup:[{name:"이원석", pos:"CF", type:"교타자형"},{name:"페라자", pos:"RF", type:"거포형"},{name:"문현빈", pos:"LF", type:"밸런스형"},{name:"강백호", pos:"DH", type:"거포형"},{name:"채은성", pos:"1B", type:"밸런스형"},{name:"노시환", pos:"3B", type:"거포형"},{name:"황영목", pos:"2B", type:"교타자형"},{name:"최재훈", pos:"C", type:"수비형"},{name:"심우준", pos:"SS", type:"약체형"}], pitchers:{sp1:{name:"화이트",type:"컷패스트볼/스위퍼",speed:148},sp2:{name:"왕옌청",type:"체인지업/슬라이더",speed:143},sp3:{name:"에르난데스",type:"포심/커브",speed:146},sp4:{name:"류현진",type:"체인지업/컷패스트볼",speed:141},sp5:{name:"박준영",type:"슬라이더",speed:145},rp1:{name:"한승혁",type:"포심/스플리터",speed:152},rp2:{name:"김서현",type:"투심/슬라이더",speed:154},rp3:{name:"임준섭",type:"슬라이더",speed:138},closer:{name:"주현상",type:"체인지업",speed:145}}},
+  { name:"NC 다이노스", lineup:[{name:"박민우", pos:"2B", type:"교타자형"},{name:"서호철", pos:"3B", type:"밸런스형"},{name:"크림", pos:"1B", type:"거포형"},{name:"박건우", pos:"DH", type:"밸런스형"},{name:"이우성", pos:"LF", type:"밸런스형"},{name:"권희동", pos:"RF", type:"밸런스형"},{name:"김형준", pos:"C", type:"수비형"},{name:"김주원", pos:"SS", type:"교타자형"},{name:"천재환", pos:"CF", type:"약체형"}], pitchers:{sp1:{name:"라일리",type:"슬라이더/체인지업",speed:146},sp2:{name:"테일러",type:"포심/스위퍼",speed:148},sp3:{name:"구창모",type:"슬라이더/포크볼",speed:144},sp4:{name:"토다",type:"슬라이더",speed:141},sp5:{name:"김태경",type:"슬라이더/체인지업",speed:143},rp1:{name:"김영규",type:"슬라이더",speed:145},rp2:{name:"김진호",type:"슬라이더",speed:144},rp3:{name:"류진욱",type:"포크볼",speed:147},closer:{name:"천사민",type:"포심/슬라이더",speed:147}}},
+  { name:"키움 히어로즈", lineup:[{name:"서건창", pos:"2B", type:"교타자형"},{name:"추재현", pos:"CF", type:"교타자형"},{name:"데이비드슨", pos:"1B", type:"거포형"},{name:"안치홍", pos:"DH", type:"밸런스형"},{name:"임병욱", pos:"RF", type:"밸런스형"},{name:"김웅빈", pos:"3B", type:"거포형"},{name:"김동헌", pos:"C", type:"수비형"},{name:"박찬혁", pos:"LF", type:"거포형"},{name:"권혁빈", pos:"SS", type:"약체형"}], pitchers:{sp1:{name:"알칸타라",type:"포심/포크볼",speed:149},sp2:{name:"하영민",type:"슬라이더/스플리터",speed:144},sp3:{name:"안우진",type:"슬라이더/커브",speed:152},sp4:{name:"박준현",type:"포심/슬라이더",speed:143},sp5:{name:"배동현",type:"슬라이더/체인지업",speed:142},rp1:{name:"하영민",type:"포크볼",speed:144},rp2:{name:"김재웅",type:"체인지업",speed:141},rp3:{name:"주승우",type:"슬라이더",speed:146},closer:{name:"조상우",type:"포심/슬라이더",speed:149}}}
+];
+
+let state = null;
+
+function weightedPick(table, mods, stamina){
+  let total=0; const items=[];
+  for(const [k,w] of table){
+    let m = (mods && mods[k]) ? mods[k] : 1;
+    if (stamina !== undefined && stamina < 50) {
+      if (['single', 'double', 'homerun'].includes(k)) {
+        m *= (1.5 - (stamina / 100)); 
+      } else if (['strike_swinging', 'strike_looking'].includes(k)) {
+        m *= (0.5 + (stamina / 100)); 
+      }
+    }
+    const weight = w*m;
+    total += weight;
+    items.push([k, weight]);
+  }
+  let r = Math.random()*total;
+  for(const [k,w] of items){ if(r<w) return k; r-=w; }
+  return items[items.length-1][0];
+}
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+const homeSelect = document.getElementById('homeSelect');
+const awaySelect = document.getElementById('awaySelect');
+const pitcherSelect = document.getElementById('pitcherSelect');
+
+TEAMS.forEach((t,i)=>{
+  const o1=document.createElement('option'); o1.value=i; o1.textContent=t.name; homeSelect.appendChild(o1);
+  const o2=document.createElement('option'); o2.value=i; o2.textContent=t.name; awaySelect.appendChild(o2);
+});
+homeSelect.value=0; awaySelect.value=1;
+
+function previewText(team){
+  const key = team.lineup.slice(0, 9);
+  return "선발 타선: " + key.map(p=>`<b>${p.name}</b>(${p.pos})`).join(', ');
+}
+
+function updatePitcherSelect(){
+  pitcherSelect.innerHTML = '';
+  const team = TEAMS[homeSelect.value];
+  for (let i = 1; i <= 5; i++) {
+    const key = 'sp' + i;
+    const p = team.pitchers[key];
+    const o = document.createElement('option');
+    o.value = key;
+    o.textContent = `${i}선발: ${p.name} (${p.type})`;
+    pitcherSelect.appendChild(o);
+  }
+}
+
+function updateVisualTheme(){
+  const homeTeamName = TEAMS[homeSelect.value].name;
+  const awayTeamName = TEAMS[awaySelect.value].name;
+  const stadiumInfo = STADIUM_DATA[homeTeamName] || STADIUM_DATA["KIA 타이거즈"];
+
+  document.getElementById('homeLogoBadge').innerHTML = TEAM_LOGOS[homeTeamName] || '';
+  document.getElementById('awayLogoBadge').innerHTML = TEAM_LOGOS[awayTeamName] || '';
+
+  document.getElementById('sbHomeLogo').innerHTML = TEAM_LOGOS[homeTeamName] || '';
+  document.getElementById('sbAwayLogo').innerHTML = TEAM_LOGOS[awayTeamName] || '';
+
+  document.getElementById('stadiumTitle').textContent = `🏟️ ${stadiumInfo.name}`;
+  document.getElementById('stadiumDesc').textContent = stadiumInfo.desc;
+
+  document.documentElement.style.setProperty('--team-accent', stadiumInfo.themeColor);
+  document.documentElement.style.setProperty('--team-glow', stadiumInfo.themeGlow);
+
+  document.getElementById('homePreview').innerHTML = previewText(TEAMS[homeSelect.value]);
+  document.getElementById('awayPreview').innerHTML = previewText(TEAMS[awaySelect.value]);
+
+  updatePitcherSelect();
+}
+
+homeSelect.onchange = updateVisualTheme;
+awaySelect.onchange = updateVisualTheme;
+
+updateVisualTheme();
+
+document.getElementById('startBtn').onclick = function(){
+  initAudio();
+  startGame(parseInt(homeSelect.value), parseInt(awaySelect.value));
+};
+document.getElementById('restartBtn').onclick = function(){
+  document.getElementById('endScreen').style.display='none';
+  document.getElementById('selectScreen').style.display='block';
+};
+
+let scene, camera, renderer;
+let ball, pitcherMesh, batterMesh, catcherMesh;
+let stadiumGroup = null;
+let backstopGroup = null;
+let runnerMeshes = [];
+let scoreboardCanvas, scoreboardContext, scoreboardTexture;
+let ballTrailLine = null;
+const TRAIL_MAX_POINTS = 30;
+let ballTrailPoints = [];
+
+const DEFAULT_CAM_POS = new THREE.Vector3(0, 15.0, 27.0);
+const DEFAULT_CAM_LOOK = new THREE.Vector3(0, 2.0, -9.0);
+
+let camMode = 'broadcast';
+let targetCamPos = new THREE.Vector3(0, 15.0, 27.0);
+let targetCamLook = new THREE.Vector3(0, 2.0, -9.0);
+let currentCamPos = new THREE.Vector3(0, 15.0, 27.0);
+let currentCamLook = new THREE.Vector3(0, 2.0, -9.0);
+
+function setCameraView(mode) {
+  initAudio();
+  camMode = mode;
+  document.getElementById('camBroadcastBtn').classList.toggle('active', mode === 'broadcast');
+  document.getElementById('camPitcherBtn').classList.toggle('active', mode === 'pitcher');
+  document.getElementById('camCatcherBtn').classList.toggle('active', mode === 'catcher');
+
+  if (backstopGroup) {
+    backstopGroup.visible = (mode !== 'catcher');
+  }
+
+  if (mode === 'broadcast') {
+    targetCamPos.set(0, 15.0, 27.0);
+    targetCamLook.set(0, 2.0, -9.0);
+  } else if (mode === 'pitcher') {
+    targetCamPos.set(0, 2.5, -3.2);
+    targetCamLook.set(0, 0.9, 12.0);
+  } else if (mode === 'catcher') {
+    targetCamPos.set(0, 1.8, 14.2);
+    targetCamLook.set(0, 1.1, -12.0);
+  }
+}
+
+let fieldersMap = {
+  '1B': { mesh: null, basePos: new THREE.Vector3(11.5, 0, 1.5) },
+  '2B': { mesh: null, basePos: new THREE.Vector3(6, 0, -4.5) },
+  'SS': { mesh: null, basePos: new THREE.Vector3(-6, 0, -4.5) },
+  '3B': { mesh: null, basePos: new THREE.Vector3(-11.5, 0, 1.5) },
+  'LF': { mesh: null, basePos: new THREE.Vector3(-22, 0, -22) },
+  'CF': { mesh: null, basePos: new THREE.Vector3(0, 0, -32) },
+  'RF': { mesh: null, basePos: new THREE.Vector3(22, 0, -22) }
+};
+
+let animState = {
+  active: false, outcome: null, phase: 'none', time: 0, duration: 0,
+  startPos: new THREE.Vector3(), endPos: new THREE.Vector3(), controlPos: new THREE.Vector3(),
+  animPaths: [], onComplete: null, pitchX: 0, pitchY: 0.85, pitchType: '직구', pitchSpeed: 145,
+  playType: '', activeFielderKey: null, fielderStartPos: new THREE.Vector3(), fielderEndPos: new THREE.Vector3(), targetBase: '1B'
+};
+
+function startGame(homeIdx, awayIdx){
+  const homeTeam = JSON.parse(JSON.stringify(TEAMS[homeIdx]));
+  const awayTeam = JSON.parse(JSON.stringify(TEAMS[awayIdx]));
+  
+  const selectedSp = pitcherSelect.value;
+  const awaySpIdx = Math.floor(1 + Math.random() * 5);
+  const awaySp = 'sp' + awaySpIdx;
+
+  state = {
+    home: homeTeam, away: awayTeam,
+    inning:1, half:'top', outs:0, balls:0, strikes:0,
+    bases:[null, null, null],
+    score:{home:0, away:0}, lineupIdx:{home:0, away:0}, log:[],
+    activePitcherKey: { home: selectedSp, away: awaySp },
+    pitchersStamina: {
+      home: { sp1: 100, sp2: 100, sp3: 100, sp4: 100, sp5: 100, rp1: 100, rp2: 100, rp3: 100, closer: 100 },
+      away: { sp1: 100, sp2: 100, sp3: 100, sp4: 100, sp5: 100, rp1: 100, rp2: 100, rp3: 100, closer: 100 }
+    },
+    pitchersPitches: {
+      home: { sp1: 0, sp2: 0, sp3: 0, sp4: 0, sp5: 0, rp1: 0, rp2: 0, rp3: 0, closer: 0 },
+      away: { sp1: 0, sp2: 0, sp3: 0, sp4: 0, sp5: 0, rp1: 0, rp2: 0, rp3: 0, closer: 0 }
+    },
+    usedPitchers: { home: [], away: [] }, isSwappingPitcher: false
+  };
+
+  document.getElementById('selectScreen').style.display='none';
+  document.getElementById('endScreen').style.display='none';
+  document.getElementById('gameScreen').style.display='block';
+  document.getElementById('awayNameTag').textContent = state.away.name;
+  document.getElementById('homeNameTag').textContent = state.home.name;
+  
+  const activeHomePitcher = getActivePitcher('home');
+  const activeAwayPitcher = getActivePitcher('away');
+  const homeStadiumInfo = STADIUM_DATA[state.home.name] || STADIUM_DATA["KIA 타이거즈"];
+
+  addLog(`⚾ 경기 시작! [구장] ${homeStadiumInfo.name}에서 경기가 열립니다.`);
+  addLog(`🎙️ 선발 매치업: [원정] ${activeAwayPitcher.name} vs [홈] ${activeHomePitcher.name}`);
+  
+  if (!renderer) {
+    init3D();
+  } else {
+    buildBaseballField();
+    resize3D();
+  }
+  
+  render();
+}
+
+function getActivePitcher(side) {
+  const team = state[side];
+  const key = state.activePitcherKey[side];
+  return team.pitchers[key];
+}
+
+function battingKey(){ return state.half==='top' ? 'away' : 'home'; }
+function fieldingKey(){ return state.half==='top' ? 'home' : 'away'; }
+function isPlayerPitching(){ return state.half==='top'; }
+function currentBatter(){
+  const team = state[battingKey()];
+  return team.lineup[state.lineupIdx[battingKey()]];
+}
+function addLog(msg){ state.log.unshift(msg); if(state.log.length>6) state.log.pop(); }
+
+function render(){
+  document.getElementById('inningTag').textContent = `${state.inning}회 ${state.half==='top'?'초':'말'}`;
+  document.getElementById('halfTag').textContent = state.half==='top'
+    ? '원정 공격 · 플레이어 수비' : '플레이어 공격 · 원정 수비';
+  document.getElementById('awayScoreTag').textContent = state.score.away;
+  document.getElementById('homeScoreTag').textContent = state.score.home;
+
+  for(let i=0;i<3;i++){
+    document.getElementById('ball'+i).className = 'pip' + (i<state.balls?' filled-ball':'');
+  }
+  for(let i=0;i<2;i++){
+    document.getElementById('strike'+i).className = 'pip' + (i<state.strikes?' filled-strike':'');
+  }
+  for(let i=0;i<2;i++){
+    document.getElementById('out'+i).className = 'pip' + (i<state.outs?' filled-out':'');
+  }
+
+  updateRunnerPanel();
+
+  const activeHome = getActivePitcher('home');
+  const activeAway = getActivePitcher('away');
+  const homeStam = state.pitchersStamina.home[state.activePitcherKey.home];
+  const awayStam = state.pitchersStamina.away[state.activePitcherKey.away];
+  const homePitches = state.pitchersPitches.home[state.activePitcherKey.home];
+  const awayPitches = state.pitchersPitches.away[state.activePitcherKey.away];
+
+  document.getElementById('awayPitcherTag').textContent = activeAway.name;
+  document.getElementById('awayStaminaTag').textContent = awayStam + '%';
+  document.getElementById('awayPitchesTag').textContent = awayPitches;
+
+  document.getElementById('homePitcherTag').textContent = activeHome.name;
+  document.getElementById('homeStaminaTag').textContent = homeStam + '%';
+  document.getElementById('homePitchesTag').textContent = homePitches;
+  
+  document.getElementById('awayStaminaTag').style.color = awayStam < 45 ? '#ff5252' : '#00e676';
+  document.getElementById('homeStaminaTag').style.color = homeStam < 45 ? '#ff5252' : '#00e676';
+
+  updateStaticRunners();
+  updateTeamColors();
+  update3DScoreboard();
+
+  document.getElementById('commentary').textContent = state.log[0] || '';
+  document.getElementById('logMini').innerHTML = state.log.slice(1).join('<br>');
+
+  renderActionPanel();
+}
+
+function updateRunnerPanel() {
+  const b1 = state.bases[0];
+  const b2 = state.bases[1];
+  const b3 = state.bases[2];
+
+  document.getElementById('b1Badge').className = 'runner-badge' + (b1 ? ' active' : '');
+  document.getElementById('b2Badge').className = 'runner-badge' + (b2 ? ' active' : '');
+  document.getElementById('b3Badge').className = 'runner-badge' + (b3 ? ' active' : '');
+
+  document.getElementById('b1Name').textContent = b1 ? `${b1.name}` : '비어있음';
+  document.getElementById('b2Name').textContent = b2 ? `${b2.name}` : '비어있음';
+  document.getElementById('b3Name').textContent = b3 ? `${b3.name}` : '비어있음';
+}
+
+function renderActionPanel(){
+  const batter = currentBatter();
+  const activeHome = getActivePitcher('home');
+  const homeStam = state.pitchersStamina.home[state.activePitcherKey.home];
+
+  if(isPlayerPitching()){
+    if (state.isSwappingPitcher) {
+      document.getElementById('roleTag').textContent = '🔄 투수 교체 (수비)';
+      document.getElementById('roleDesc').innerHTML =
+        `마운드의 <b>${activeHome.name}</b> (체력: ${homeStam}%)를 교체할 불펜 투수를 선택하세요.`;
+      
+      const team = state.home;
+      const allCandidates = [
+        { key: 'sp1', prefix: '1선발' }, { key: 'sp2', prefix: '2선발' }, { key: 'sp3', prefix: '3선발' },
+        { key: 'sp4', prefix: '4선발' }, { key: 'sp5', prefix: '5선발' }, { key: 'rp1', prefix: '불펜' },
+        { key: 'rp2', prefix: '불펜' }, { key: 'rp3', prefix: '불펜' }, { key: 'closer', prefix: '마무리' }
+      ];
+
+      const available = allCandidates.filter(c => 
+        c.key !== state.activePitcherKey.home && 
+        !state.usedPitchers.home.includes(c.key)
+      );
+
+      if (available.length === 0) {
+        document.getElementById('roleDesc').innerHTML += `<br><b style="color:#ff5252;">교체 투수가 없습니다!</b>`;
+        setChoices(['돌아가기 (투구 선택)'], () => { state.isSwappingPitcher = false; render(); });
+      } else {
+        const labels = available.map(c => {
+          const p = team.pitchers[c.key];
+          return `${c.prefix} ${p.name} (체력: ${state.pitchersStamina.home[c.key]}%)`;
+        });
+        labels.push('돌아가기 (투구 선택)');
+        
+        setChoices(labels, (choiceIdx) => {
+          if (choiceIdx === labels.length) {
+            state.isSwappingPitcher = false;
+            render();
+          } else {
+            const previousKey = state.activePitcherKey.home;
+            const selectedKey = available[choiceIdx-1].key;
+            state.usedPitchers.home.push(previousKey);
+            state.activePitcherKey.home = selectedKey;
+            state.isSwappingPitcher = false;
+            addLog(`🔄 [플레이어 투수 교체] ${getActivePitcher('home').name} 등판!`);
+            render();
+          }
+        });
+      }
+    } else {
+      document.getElementById('roleTag').textContent = '🎮 투구 선택 (수비)';
+      document.getElementById('roleDesc').innerHTML =
+        `현재 투수: <b>${activeHome.name}</b> (체력: ${homeStam}%, ${activeHome.type})<br>` +
+        `타석에는 <b>${batter.name}</b> (${batter.type}) 선수가 들어섰습니다. 구종 및 견제를 선택하세요.`;
+      
+      const choices = [
+        '스트라이크 존 구석 직구',
+        '유인구 변화구',
+        '정면 승부 직구'
+      ];
+
+      if (state.bases[0]) choices.push('🎯 1루 견제구 던지기');
+      if (state.bases[1]) choices.push('🎯 2루 견제구 던지기');
+      
+      choices.push('🔄 투수 교체 등판하기');
+      
+      setChoices(choices, (n)=>{
+        const selectedText = choices[n-1];
+        if (selectedText.includes('투수 교체')) {
+          state.isSwappingPitcher = true;
+          render();
+        } else if (selectedText.includes('1루 견제구')) {
+          doPickoff('1B');
+        } else if (selectedText.includes('2루 견제구')) {
+          doPickoff('2B');
+        } else {
+          doPitch(n);
+        }
+      });
+    }
+  } else {
+    const activeAway = getActivePitcher('away');
+    const awayStam = state.pitchersStamina.away[state.activePitcherKey.away];
+    document.getElementById('roleTag').textContent = '🎮 타격 선택 (공격)';
+    document.getElementById('roleDesc').innerHTML =
+      `상대 투수: <b>${activeAway.name}</b> (체력: ${awayStam}%, ${activeAway.type})<br>` +
+      `상대 투수가 와인드업에 들어갑니다. 타석의 <b>${batter.name}</b>, 어떻게 대응하시겠습니까?`;
+    
+    const choices = [
+      '스트라이크만 노리는 강타',
+      '공을 끝까지 보는 웨이팅',
+      '컨택 위주의 커트',
+      '⚾ 희생/기습 번트 시도'
+    ];
+
+    if (state.bases[0] || state.bases[1]) {
+      choices.push('⚡ 2루/3루 도루 감행 (고난도)');
+    }
+
+    setChoices(choices, (n) => {
+      const selectedText = choices[n-1];
+      if (selectedText.includes('번트')) {
+        doBunt();
+      } else if (selectedText.includes('도루')) {
+        doSteal();
+      } else {
+        doBat(n);
+      }
+    });
+  }
+}
+
+function setChoices(labels, handler){
+  const box = document.getElementById('choiceButtons');
+  box.innerHTML='';
+  labels.forEach((label,i)=>{
+    const btn=document.createElement('button');
+    btn.className='choice-btn';
+    btn.innerHTML = `<span class="choice-num">${i+1}</span>${label}`;
+    btn.onclick=()=>{
+      initAudio();
+      handler(i+1);
+    };
+    box.appendChild(btn);
+  });
+}
+
+function doPickoff(targetBase) {
+  addLog(`🎯 [플레이어 수비] ${targetBase==='1B'?'1루':'2루'} 견제구를 던집니다!`);
+  playSound('pitch');
+
+  const rand = Math.random();
+  let result = 'safe';
+  if (rand < 0.15) result = 'out';
+  else if (rand < 0.20) result = 'wild';
+
+  start3DPickoffAnimation(targetBase, result, () => {
+    playSound('catch');
+    if (result === 'out') {
+      const idx = targetBase === '1B' ? 0 : 1;
+      const runnerName = state.bases[idx] ? state.bases[idx].name : '주자';
+      state.bases[idx] = null;
+      addLog(`🚨 ${pick(FLAVOR.pickoff_out)} (${runnerName} 아웃!)`);
+      recordOut();
+    } else if (result === 'wild') {
+      addLog(`⚠️ ${pick(FLAVOR.pickoff_wild)}`);
+      advanceRunners(1, null);
+      render();
+    } else {
+      addLog(`💨 ${pick(FLAVOR.pickoff_safe)}`);
+      render();
+    }
+  });
+}
+
+function doBunt() {
+  const batter = currentBatter();
+  const speed = (TYPE_MODIFIER[batter.type] && TYPE_MODIFIER[batter.type].speed) || 70;
+  
+  const successChance = 0.25 + (speed / 300);
+  const isSuccess = Math.random() < successChance;
+
+  state.pitchersPitches.away[state.activePitcherKey.away]++;
+  playSound('pitch');
+
+  start3DBuntAnimation(isSuccess, () => {
+    playSound(isSuccess ? 'hit' : 'catch');
+    if (isSuccess) {
+      if (Math.random() < 0.25) { 
+        const scored = advanceRunners(1, { name: batter.name, speed: speed });
+        addLog(`⚡ ${pick(FLAVOR.bunt_success)} (번트 내야안타!)` + (scored > 0 ? ` (${scored}점 획득)` : ''));
+        state.score[battingKey()] += scored;
+        checkWalkoff();
+        if (!state.gameOver) endAtBat();
+      } else { 
+        const scored = advanceRunners(1, null);
+        addLog(`🎯 희생번트 성공! 타자는 1루에서 아웃, 주자 진루.` + (scored > 0 ? ` (${scored}점 획득)` : ''));
+        state.score[battingKey()] += scored;
+        checkWalkoff();
+        recordOut();
+      }
+    } else {
+      addLog(`❌ ${pick(FLAVOR.bunt_out)}`);
+      recordOut();
+    }
+  });
+}
+
+function doSteal() {
+  let targetBase = '2B';
+  let runnerIdx = 0;
+
+  if (state.bases[0]) {
+    targetBase = '2B';
+    runnerIdx = 0;
+  } else if (state.bases[1]) {
+    targetBase = '3B';
+    runnerIdx = 1;
+  }
+
+  const runner = state.bases[runnerIdx];
+  const runnerSpeed = runner ? runner.speed : 75;
+  
+  const stealSuccessChance = 0.15 + (runnerSpeed / 100) * 0.18;
+  const isSuccess = Math.random() < stealSuccessChance;
+
+  playSound('pitch');
+
+  start3DStealAnimation(targetBase, isSuccess, () => {
+    playSound('catch');
+    if (isSuccess) {
+      addLog(`⚡ ${pick(FLAVOR.steal_success)} (${runner.name} ${targetBase} 헤드퍼스트 슬라이딩 세이프!)`);
+      if (targetBase === '2B') {
+        state.bases[1] = state.bases[0];
+        state.bases[0] = null;
+      } else if (targetBase === '3B') {
+        state.bases[2] = state.bases[1];
+        state.bases[1] = null;
+      }
+      render();
+    } else {
+      addLog(`🚨 ${pick(FLAVOR.steal_out)} (${runner.name} 포수 칼송구에 태그아웃!)`);
+      state.bases[runnerIdx] = null;
+      recordOut();
+    }
+  });
+}
+
+function doPitch(choice){
+  const batter = currentBatter();
+  const mods = TYPE_MODIFIER[batter.type] || {};
+  const stamina = state.pitchersStamina.home[state.activePitcherKey.home];
+  
+  state.pitchersPitches.home[state.activePitcherKey.home]++;
+  
+  if (state.bases[0] && Math.random() < 0.05) {
+    addLog(`🚨 [AI 원정팀] 기습 도루를 감행합니다!`);
+    const isSuccess = Math.random() < 0.25;
+    playSound('pitch');
+    start3DStealAnimation('2B', isSuccess, () => {
+      playSound('catch');
+      if (isSuccess) {
+        addLog(`⚡ AI 원정팀 도루 성공! 2루 세이프!`);
+        state.bases[1] = state.bases[0];
+        state.bases[0] = null;
+        render();
+      } else {
+        addLog(`🚨 포수의 신속 송구! AI 원정팀 도루 저지 완료!`);
+        state.bases[0] = null;
+        recordOut();
+      }
+    });
+    return;
+  }
+
+  const outcome = weightedPick(PITCH_BASE[choice], mods, stamina);
+  
+  start3DAnimation(outcome, () => {
+    resolveOutcome(outcome);
+  }, choice);
+}
+
+function doBat(choice){
+  const pitchIsStrike = Math.random() < 0.58;
+  const table = BAT_TABLE[choice][pitchIsStrike?'strike':'ball'];
+  const stamina = state.pitchersStamina.away[state.activePitcherKey.away];
+  
+  state.pitchersPitches.away[state.activePitcherKey.away]++;
+
+  const outcome = weightedPick(table, {}, stamina);
+  const aiChoice = pick([1, 2, 3]); 
+  
+  start3DAnimation(outcome, () => {
+    resolveOutcome(outcome);
+  }, aiChoice);
+}
+
+function resolveOutcome(outcome){
+  switch(outcome){
+    case 'ball':
+      playSound('ball');
+      state.balls++;
+      if(state.balls>=4){ walkBatter(); }
+      else { addLog(pick(FLAVOR.ball)); render(); }
+      break;
+    case 'strike_looking':
+    case 'strike_swinging':
+      playSound('strike');
+      state.strikes++;
+      if(state.strikes>=3){ addLog(pick(FLAVOR.strikeout)); recordOut(); }
+      else { addLog(pick(FLAVOR[outcome])); render(); }
+      break;
+    case 'foul':
+      playSound('hit');
+      if(state.strikes<2) state.strikes++;
+      addLog(pick(FLAVOR.foul));
+      render();
+      break;
+    case 'out':
+      playSound('hit');
+      handleBattedOut();
+      break;
+    case 'single': playSound('hit'); doHit(1,'single'); break;
+    case 'double': playSound('hit'); doHit(2,'double'); break;
+    case 'triple': playSound('hit'); doHit(3,'triple'); break;
+    case 'homerun': playSound('homerun'); doHit(4,'homerun'); break;
+  }
+}
+
+function handleBattedOut(){
+  if(state.bases[0] && state.outs<2 && Math.random()<0.3){
+    state.bases[0]=null;
+    state.outs+=2;
+    addLog(pick(FLAVOR.double_play));
+  } else {
+    state.outs+=1;
+    addLog(pick(FLAVOR.out));
+  }
+  endAtBat();
+}
+
+function doHit(n, type){
+  const batter = currentBatter();
+  const speed = (TYPE_MODIFIER[batter.type] && TYPE_MODIFIER[batter.type].speed) || 75;
+  const scored = advanceRunners(n, { name: batter.name, speed: speed });
+  addLog(pick(FLAVOR[type]) + (scored>0 ? ` (${scored}점 획득)`:''));
+  state.score[battingKey()] += scored;
+  if(scored > 0) playSound('cheer');
+  checkWalkoff();
+  if(!state.gameOver) endAtBat();
+}
+
+function walkBatter(){
+  const batter = currentBatter();
+  const speed = (TYPE_MODIFIER[batter.type] && TYPE_MODIFIER[batter.type].speed) || 75;
+  const newRunner = { name: batter.name, speed: speed };
+  
+  const b = state.bases;
+  let scored=0;
+  if(b[0]){
+    if(b[1]){
+      if(b[2]) scored=1; 
+      b[2]=b[1]; b[1]=b[0]; b[0]=newRunner;
+    } else {
+      b[1]=b[0]; b[0]=newRunner;
+    }
+  } else {
+    b[0]=newRunner;
+  }
+  state.score[battingKey()] += scored;
+  addLog(pick(FLAVOR.walk) + (scored>0?' (밀어내기 1점!)':''));
+  if(scored > 0) playSound('cheer');
+  checkWalkoff();
+  if(!state.gameOver) endAtBat();
+}
+
+function advanceRunners(n, batterPlayer){
+  let scored=0;
+  const b = state.bases;
+  const newBases = [null, null, null];
+
+  for(let i=2; i>=0; i--){
+    if(b[i]){
+      const newPos = (i+1)+n;
+      if(newPos>=4){ scored++; } else { newBases[newPos-1] = b[i]; }
+    }
+  }
+
+  if (batterPlayer) {
+    const battersPos = n;
+    if(battersPos>=4){ scored++; } else { newBases[battersPos-1] = batterPlayer; }
+  }
+
+  state.bases = newBases;
+  return scored;
+}
+
+function checkWalkoff(){
+  if(state.half==='bottom' && state.inning>=9 && state.score.home>state.score.away){
+    endGame(false, true);
+  }
+}
+
+function recordOut(){
+  state.outs+=1;
+  endAtBat();
+}
+
+function checkAIPitcherChange(){
+  if (state.half === 'bottom') {
+    const activeKey = state.activePitcherKey.away;
+    const curStamina = state.pitchersStamina.away[activeKey];
+    const isLateInning = state.inning >= 8;
+    const team = state.away;
+    
+    if (isLateInning && activeKey !== 'closer' && !state.usedPitchers.away.includes('closer')) {
+      if (!state.usedPitchers.away.includes(activeKey)) {
+        state.usedPitchers.away.push(activeKey);
+      }
+      state.activePitcherKey.away = 'closer';
+      addLog(`🔄 [원정팀 투수 교체] 마무리 ${team.pitchers.closer.name} 마운드 등판!`);
+    } 
+    else if (curStamina < 40) {
+      const rps = ['rp1', 'rp2', 'rp3'];
+      const availableRPs = rps.filter(k => !state.usedPitchers.away.includes(k) && k !== activeKey);
+      
+      if (availableRPs.length > 0) {
+        let bestRPKey = availableRPs[0];
+        let maxStam = -1;
+        availableRPs.forEach(k => {
+          if (state.pitchersStamina.away[k] > maxStam) {
+            maxStam = state.pitchersStamina.away[k];
+            bestRPKey = k;
+          }
+        });
+        
+        if (maxStam > 30) {
+          state.usedPitchers.away.push(activeKey);
+          state.activePitcherKey.away = bestRPKey;
+          addLog(`🔄 [원정팀 투수 교체] 구원계투 ${team.pitchers[bestRPKey].name} 교체!`);
+        }
+      }
+    }
+  }
+}
+
+function endAtBat(){
+  if (state.half === 'top') {
+    const activeKey = state.activePitcherKey.home;
+    const isSP = activeKey.startsWith('sp');
+    const loss = isSP ? Math.floor(3 + Math.random() * 2) : Math.floor(12 + Math.random() * 6);
+    state.pitchersStamina.home[activeKey] = Math.max(0, state.pitchersStamina.home[activeKey] - loss);
+  } else {
+    const activeKey = state.activePitcherKey.away;
+    const isSP = activeKey.startsWith('sp');
+    const loss = isSP ? Math.floor(3 + Math.random() * 2) : Math.floor(12 + Math.random() * 6);
+    state.pitchersStamina.away[activeKey] = Math.max(0, state.pitchersStamina.away[activeKey] - loss);
+  }
+
+  state.balls=0; state.strikes=0;
+  state.lineupIdx[battingKey()] = (state.lineupIdx[battingKey()]+1) % 9;
+  if(state.gameOver) return;
+  if(state.outs>=3){ endHalfInning(); }
+  else { 
+    checkAIPitcherChange();
+    render(); 
+  }
+}
+
+function endHalfInning(){
+  state.outs=0; state.balls=0; state.strikes=0;
+  state.bases=[null, null, null];
+
+  if(state.half==='top'){
+    if(state.inning>=9 && state.score.home>state.score.away){
+      endGame(false,false);
+      return;
+    }
+    state.half='bottom';
+    addLog(`— ${state.inning}회말 시작, ${state.home.name} 공격 —`);
+  } else {
+    if(state.inning>=9){
+      if(state.score.home!==state.score.away){
+        endGame(false,false);
+        return;
+      } else if(state.inning>=12){
+        endGame(true,false);
+        return;
+      } else {
+        state.inning++;
+        state.half='top';
+        addLog(`— ${state.inning}회초 시작, ${state.away.name} 공격 (연장) —`);
+      }
+    } else {
+      state.inning++;
+      state.half='top';
+      addLog(`— ${state.inning}회초 시작, ${state.away.name} 공격 —`);
+    }
+  }
+  checkAIPitcherChange();
+  render();
+}
+
+function endGame(isDraw, isWalkoff){
+  state.gameOver = true;
+  document.getElementById('gameScreen').style.display = 'none';
+  const endScreen = document.getElementById('endScreen');
+  endScreen.style.display = 'block';
+
+  const title = document.getElementById('endTitle');
+  const sub = document.getElementById('endSub');
+  const score = document.getElementById('finalScore');
+
+  score.textContent = `${state.score.away} : ${state.score.home}`;
+
+  if (isDraw) {
+    title.textContent = "🤝 경기 종료 (무승부)";
+    sub.textContent = "12회 연장 끝에 승부를 가리지 못하고 무승부로 경기가 종료되었습니다.";
+  } else {
+    const playerWon = state.score.home > state.score.away;
+    if (playerWon) {
+      playSound('cheer');
+      title.textContent = isWalkoff ? "🎉 끝내기 승리!" : "🎉 승리하였습니다!";
+      sub.textContent = `플레이어 팀(${state.home.name})이 멋진 승리를 거두었습니다!`;
+    } else {
+      title.textContent = "패배하였습니다";
+      sub.textContent = `아쉽게도 AI 팀(${state.away.name})에 승리를 내주었습니다.`;
+    }
+  }
+}
+
+function createPlayerMesh(isBatter = false, isCatcher = false) {
+  const group = new THREE.Group();
+
+  const legsGeo = new THREE.CylinderGeometry(0.18, 0.16, 0.45, 8);
+  const legsMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 });
+  const legs = new THREE.Mesh(legsGeo, legsMat);
+  legs.position.y = 0.225;
+  legs.userData.part = 'pants';
+  group.add(legs);
+
+  const beltGeo = new THREE.CylinderGeometry(0.19, 0.19, 0.05, 12);
+  const beltMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 });
+  const belt = new THREE.Mesh(beltGeo, beltMat);
+  belt.position.y = 0.46;
+  belt.userData.part = 'belt';
+  group.add(belt);
+
+  const bodyGeo = new THREE.CylinderGeometry(0.21, 0.19, 0.45, 8);
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 0.71;
+  body.userData.part = 'jersey';
+  group.add(body);
+
+  const armGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.35, 8);
+  const sleeveMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+  
+  const leftArm = new THREE.Mesh(armGeo, sleeveMat);
+  leftArm.name = "leftArm";
+  leftArm.position.set(-0.25, 0.72, 0);
+  leftArm.rotation.z = 0.25;
+  leftArm.userData.part = 'sleeve';
+  group.add(leftArm);
+
+  const rightArm = new THREE.Mesh(armGeo, sleeveMat);
+  rightArm.name = "rightArm";
+  rightArm.position.set(0.25, 0.72, 0);
+  rightArm.rotation.z = -0.25;
+  rightArm.userData.part = 'sleeve';
+  group.add(rightArm);
+
+  const headGeo = new THREE.SphereGeometry(0.17, 12, 12);
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.8 });
+  const head = new THREE.Mesh(headGeo, headMat);
+  head.position.y = 1.05;
+  group.add(head);
+
+  const capGeo = new THREE.SphereGeometry(0.18, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+  const capMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+  const cap = new THREE.Mesh(capGeo, capMat);
+  cap.position.y = 1.07;
+  cap.userData.part = 'cap';
+  group.add(cap);
+
+  const brimGeo = new THREE.BoxGeometry(0.14, 0.02, 0.15);
+  const visorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+  const brim = new THREE.Mesh(brimGeo, visorMat);
+  brim.position.set(0, 1.12, -0.15); 
+  brim.userData.part = 'visor';
+  group.add(brim);
+
+  const shoeGeo = new THREE.BoxGeometry(0.12, 0.08, 0.22);
+  const shoeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+  const shoeL = new THREE.Mesh(shoeGeo, shoeMat); shoeL.position.set(-0.1, 0.04, 0); shoeL.userData.part = 'socks'; group.add(shoeL);
+  const shoeR = new THREE.Mesh(shoeGeo, shoeMat); shoeR.position.set(0.1, 0.04, 0); shoeR.userData.part = 'socks'; group.add(shoeR);
+
+  if (isCatcher) {
+    const chestGeo = new THREE.BoxGeometry(0.44, 0.42, 0.1);
+    const gearMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4, metalness: 0.3 });
+    const chest = new THREE.Mesh(chestGeo, gearMat);
+    chest.position.set(0, 0.7, -0.15);
+    chest.userData.part = 'catcher';
+    group.add(chest);
+
+    const maskGeo = new THREE.SphereGeometry(0.2, 8, 8);
+    const maskMat = new THREE.MeshStandardMaterial({ color: 0x111111, wireframe: true });
+    const mask = new THREE.Mesh(maskGeo, maskMat);
+    mask.position.set(0, 1.05, -0.05);
+    group.add(mask);
+  }
+
+  if (!isBatter) {
+    const gloveGeo = new THREE.BoxGeometry(0.16, 0.22, 0.14);
+    const gloveMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 }); 
+    const glove = new THREE.Mesh(gloveGeo, gloveMat);
+
+    if (isCatcher) {
+      glove.position.set(0, 0.8, -0.3);
+    } else {
+      glove.position.set(-0.35, 0.55, 0);
+    }
+    group.add(glove);
+  }
+
+  if (isBatter) {
+    const batGroup = new THREE.Group();
+    batGroup.name = "batGroup";
+
+    const barrelGeo = new THREE.CylinderGeometry(0.055, 0.03, 0.9, 8);
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0xc49a6c, roughness: 0.5 });
+    const barrel = new THREE.Mesh(barrelGeo, woodMat);
+    barrel.position.y = 0.45;
+    batGroup.add(barrel);
+
+    const handleGeo = new THREE.CylinderGeometry(0.024, 0.024, 0.3, 8);
+    const gripMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95 });
+    const handle = new THREE.Mesh(handleGeo, gripMat);
+    handle.position.y = -0.15;
+    batGroup.add(handle);
+
+    batGroup.position.set(0.35, 0.85, 0.1);
+    batGroup.rotation.set(0.2, 0, -Math.PI / 4.2);
+
+    group.add(batGroup);
+  }
+
+  return group;
+}
+
+function init3D() {
+  const container = document.getElementById('threeContainer');
+  if (!container) return;
+
+  const w = container.clientWidth || 380;
+  const h = container.clientHeight || 350;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x020705);
+  scene.fog = new THREE.FogExp2(0x020705, 0.0035);
+
+  camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 300);
+  currentCamPos.copy(DEFAULT_CAM_POS);
+  currentCamLook.copy(DEFAULT_CAM_LOOK);
+  camera.position.copy(currentCamPos);
+  camera.lookAt(currentCamLook);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(w, h);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.25;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  container.appendChild(renderer.domElement);
+
+  buildBaseballField();
+
+  updateABS(null, null, null);
+
+  let lastTime = 0;
+  function animate(time) {
+    requestAnimationFrame(animate);
+    const deltaTime = (time - lastTime) / 1000;
+    lastTime = time;
+    update3D(deltaTime);
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(animate);
+
+  window.addEventListener('resize', resize3D);
+  resize3D();
+}
+
+function resize3D() {
+  if (!renderer || !camera) return;
+  const container = document.getElementById('threeContainer');
+  if (!container) return;
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+
+function createMowedGrassTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024; canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#103322'; ctx.fillRect(0, 0, 1024, 1024);
+  ctx.fillStyle = '#17422d';
+  for (let i = 0; i < 1024; i += 128) ctx.fillRect(i, 0, 64, 1024);
+  
+  ctx.fillStyle = 'rgba(255,255,255,0.02)';
+  for(let j=0; j<8000; j++){
+    ctx.fillRect(Math.random()*1024, Math.random()*1024, 2, 2);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(8, 8);
+  return texture;
+}
+
+function initScoreboardTexture() {
+  scoreboardCanvas = document.createElement('canvas');
+  scoreboardCanvas.width = 512; scoreboardCanvas.height = 256;
+  scoreboardContext = scoreboardCanvas.getContext('2d');
+  scoreboardTexture = new THREE.CanvasTexture(scoreboardCanvas);
+  update3DScoreboard();
+}
+
+function update3DScoreboard() {
+  if (!scoreboardContext) return;
+  const ctx = scoreboardContext;
+  const w = 512, h = 256;
+
+  ctx.fillStyle = '#030a08'; ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = '#ffce54'; ctx.lineWidth = 6;
+  ctx.strokeRect(8, 8, w - 16, h - 16);
+
+  const homeTeamName = state ? state.home.name : "KBO 홈팀";
+  const stInfo = STADIUM_DATA[homeTeamName] || STADIUM_DATA["KIA 타이거즈"];
+
+  ctx.fillStyle = '#ffce54'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(`🏟️ ${stInfo.name}`, w / 2, 36);
+
+  if (state) {
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(`${state.away.name}`, 35, 90);
+    ctx.fillText(`${state.home.name}`, 35, 142);
+
+    ctx.font = 'bold 36px monospace'; ctx.fillStyle = '#ffdd7a';
+    ctx.fillText(`${state.score.away}`, 280, 92);
+    ctx.fillText(`${state.score.home}`, 280, 144);
+
+    ctx.fillStyle = '#00e676'; ctx.font = 'bold 26px sans-serif';
+    ctx.fillText(`${state.inning}회${state.half==='top'?'초':'말'}`, 365, 90);
+
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 19px sans-serif';
+    ctx.fillText(`B: ${state.balls}  S: ${state.strikes}  O: ${state.outs}`, 365, 142);
+
+    const batter = currentBatter();
+    ctx.fillStyle = '#4fc3f7'; ctx.font = 'bold 21px sans-serif';
+    ctx.fillText(`타석: ${batter.name} (${batter.pos})`, 35, 205);
+
+    if (animState && animState.pitchSpeed) {
+      ctx.fillStyle = '#ff5252'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'right';
+      ctx.fillText(`구속: ${animState.pitchSpeed} km/h`, w - 35, 205);
+    }
+  } else {
+    ctx.fillStyle = '#888888'; ctx.font = '22px sans-serif'; ctx.fillText('경기 대기 중...', w / 2, 140);
+  }
+
+  if (scoreboardTexture) scoreboardTexture.needsUpdate = true;
+}
+
+function buildBaseballField() {
+  if (stadiumGroup) scene.remove(stadiumGroup);
+  stadiumGroup = new THREE.Group();
+  scene.add(stadiumGroup);
+
+  const homeTeamName = state ? state.home.name : "KIA 타이거즈";
+  const stadiumInfo = STADIUM_DATA[homeTeamName] || STADIUM_DATA["KIA 타이거즈"];
+  const fenceRadius = stadiumInfo.radius || 56.0;
+  const wallHeight = stadiumInfo.wallHeight || 3.4;
+
+  const hemiLight = new THREE.HemisphereLight(
+    stadiumInfo.isDome ? 0xbbddee : 0xddeeff, 
+    stadiumInfo.isDome ? 0x1f2e24 : 0x0f1d17, 
+    stadiumInfo.isDome ? 1.25 : 1.05
+  );
+  hemiLight.position.set(0, 40, 0);
+  stadiumGroup.add(hemiLight);
+
+  const mainLight = new THREE.DirectionalLight(0xfffaed, stadiumInfo.isDome ? 1.0 : 1.4);
+  mainLight.position.set(20, 45, 20);
+  mainLight.castShadow = true;
+  stadiumGroup.add(mainLight);
+
+  const grassGeo = new THREE.PlaneGeometry(220, 220);
+  const grassTexture = createMowedGrassTexture();
+  const grassMat = new THREE.MeshStandardMaterial({ map: grassTexture, roughness: 0.85 });
+  const grass = new THREE.Mesh(grassGeo, grassMat);
+  grass.rotation.x = -Math.PI / 2;
+  stadiumGroup.add(grass);
+
+  const wtGeo = new THREE.RingGeometry(fenceRadius - 5, fenceRadius + 2, 64, 1, Math.PI * 0.75, Math.PI * 0.5);
+  const wtMat = new THREE.MeshStandardMaterial({ color: 0x8a5736, roughness: 0.9, side: THREE.DoubleSide });
+  const warningTrack = new THREE.Mesh(wtGeo, wtMat);
+  warningTrack.rotation.x = Math.PI / 2;
+  warningTrack.position.set(0, 0.005, 12);
+  stadiumGroup.add(warningTrack);
+
+  const dirtGeo = new THREE.PlaneGeometry(28, 28);
+  const dirtMat = new THREE.MeshStandardMaterial({ color: 0x9b633f, roughness: 0.9 });
+  const dirt = new THREE.Mesh(dirtGeo, dirtMat);
+  dirt.rotation.x = -Math.PI / 2; dirt.rotation.z = Math.PI / 4; dirt.position.set(0, 0.01, 0);
+  stadiumGroup.add(dirt);
+
+  const mound = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.3, 0.15, 20), dirtMat);
+  mound.position.set(0, 0.075, 0); stadiumGroup.add(mound);
+
+  const rubberMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const rubber = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.02, 0.15), rubberMat);
+  rubber.position.set(0, 0.155, 0); stadiumGroup.add(rubber);
+
+  const baseMat = new THREE.MeshStandardMaterial({ color: 0xf8f5ec, roughness: 0.5 });
+  const baseGeo = new THREE.BoxGeometry(0.7, 0.08, 0.7);
+  const b1 = new THREE.Mesh(baseGeo, baseMat); b1.position.set(12, 0.04, 0); stadiumGroup.add(b1);
+  const b2 = new THREE.Mesh(baseGeo, baseMat); b2.position.set(0, 0.04, -12); stadiumGroup.add(b2);
+  const b3 = new THREE.Mesh(baseGeo, baseMat); b3.position.set(-12, 0.04, 0); stadiumGroup.add(b3);
+
+  const hpGeo = new THREE.BoxGeometry(0.7, 0.02, 0.7);
+  const hp = new THREE.Mesh(hpGeo, baseMat); hp.position.set(0, 0.015, 12); hp.rotation.y = Math.PI / 4; stadiumGroup.add(hp);
+
+  const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const leftLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 52), lineMat);
+  leftLine.rotation.x = -Math.PI/2; leftLine.rotation.z = -Math.PI/4; leftLine.position.set(-16.5, 0.02, -4.5);
+  stadiumGroup.add(leftLine);
+
+  const rightLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 52), lineMat);
+  rightLine.rotation.x = -Math.PI/2; rightLine.rotation.z = Math.PI/4; rightLine.position.set(16.5, 0.02, -4.5);
+  stadiumGroup.add(rightLine);
+
+  const boxOutlineGeo = new THREE.PlaneGeometry(0.9, 1.8);
+  const bBoxL = new THREE.Mesh(boxOutlineGeo, lineMat); bBoxL.rotation.x = -Math.PI/2; bBoxL.position.set(-0.9, 0.018, 12); stadiumGroup.add(bBoxL);
+  const bBoxR = new THREE.Mesh(boxOutlineGeo, lineMat); bBoxR.rotation.x = -Math.PI/2; bBoxR.position.set(0.9, 0.018, 12); stadiumGroup.add(bBoxR);
+
+  const wallArc = Math.PI * 0.52;
+  const wallMat = new THREE.MeshStandardMaterial({ color: stadiumInfo.accentColor, roughness: 0.5 });
+  const wallGeo = new THREE.CylinderGeometry(fenceRadius, fenceRadius, wallHeight, 64, 1, true, -wallArc/2 + Math.PI, wallArc);
+  const fenceWall = new THREE.Mesh(wallGeo, wallMat);
+  fenceWall.position.set(0, wallHeight/2, 12);
+  stadiumGroup.add(fenceWall);
+
+  const wallCapMat = new THREE.MeshStandardMaterial({ color: 0xffce54, roughness: 0.3 });
+  const wallCapGeo = new THREE.RingGeometry(fenceRadius - 0.25, fenceRadius + 0.25, 64, 1, -wallArc/2 + Math.PI, wallArc);
+  const wallCap = new THREE.Mesh(wallCapGeo, wallCapMat);
+  wallCap.rotation.x = Math.PI / 2;
+  wallCap.position.set(0, wallHeight + 0.02, 12);
+  stadiumGroup.add(wallCap);
+
+  const battersEyeMat = new THREE.MeshStandardMaterial({ color: 0x051a10, roughness: 0.9 });
+  const battersEye = new THREE.Mesh(new THREE.BoxGeometry(16, wallHeight + 3.0, 1.2), battersEyeMat);
+  battersEye.position.set(0, (wallHeight + 3.0) / 2, 12 - fenceRadius - 0.5);
+  stadiumGroup.add(battersEye);
+
+  const standColor = stadiumInfo.seatColor || 0x1a2b4c;
+  const standMat = new THREE.MeshStandardMaterial({ color: standColor, roughness: 0.7 });
+  const standGeo = new THREE.CylinderGeometry(fenceRadius + 18, fenceRadius + 1.5, 12, 64, 1, true, -wallArc/2 + Math.PI, wallArc);
+  const outfieldStands = new THREE.Mesh(standGeo, standMat);
+  outfieldStands.position.set(0, 6.0, 12);
+  stadiumGroup.add(outfieldStands);
+
+  const crowdCanvas = document.createElement('canvas');
+  crowdCanvas.width = 512; crowdCanvas.height = 128;
+  const cctx = crowdCanvas.getContext('2d');
+  cctx.fillStyle = '#08121a'; cctx.fillRect(0,0,512,128);
+  const colors = ['#ffffff', '#ffce54', '#ff5252', '#40c4ff', '#90caf9', '#e0e0e0'];
+  for(let i=0; i<3500; i++){
+    cctx.fillStyle = colors[Math.floor(Math.random()*colors.length)];
+    cctx.fillRect(Math.random()*512, Math.random()*128, 2, 3);
+  }
+  const crowdTex = new THREE.CanvasTexture(crowdCanvas);
+  crowdTex.wrapS = THREE.RepeatWrapping; crowdTex.wrapT = THREE.RepeatWrapping; crowdTex.repeat.set(12, 2);
+  const crowdMat = new THREE.MeshBasicMaterial({ map: crowdTex, transparent: true, opacity: 0.85 });
+  const crowdGeo = new THREE.CylinderGeometry(fenceRadius + 17.5, fenceRadius + 2.0, 11.5, 64, 1, true, -wallArc/2 + Math.PI, wallArc);
+  const crowdMesh = new THREE.Mesh(crowdGeo, crowdMat);
+  crowdMesh.position.set(0, 6.2, 12);
+  stadiumGroup.add(crowdMesh);
+
+  const poleMat2 = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 });
+  const flagMat = new THREE.MeshBasicMaterial({ color: stadiumInfo.accentColor, side: THREE.DoubleSide });
+  for (let f = -0.4; f <= 0.4; f += 0.2) {
+    const angle = Math.PI + f;
+    const fx = Math.sin(angle) * (fenceRadius + 18.2);
+    const fz = Math.cos(angle) * (fenceRadius + 18.2) + 12;
+
+    const flagGroup = new THREE.Group();
+    const fPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 7, 8), poleMat2);
+    fPole.position.y = 3.5; flagGroup.add(fPole);
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.1), flagMat);
+    flag.position.set(0.9, 6.0, 0); flagGroup.add(flag);
+
+    flagGroup.position.set(fx, 12.0, fz);
+    stadiumGroup.add(flagGroup);
+  }
+
+  if (stadiumInfo.isDome) {
+    const domeRoofMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.6, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
+    const domeRoof = new THREE.Mesh(new THREE.SphereGeometry(72, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.42), domeRoofMat);
+    domeRoof.position.set(0, 0, 0);
+    stadiumGroup.add(domeRoof);
+  }
+
+  const dugoutMat = new THREE.MeshStandardMaterial({ color: 0x12241d, roughness: 0.7, metalness:0.3 });
+  const dugoutRoofMat = new THREE.MeshStandardMaterial({ color: stadiumInfo.accentColor, roughness: 0.5 });
+  
+  const d1 = new THREE.Group();
+  d1.add(new THREE.Mesh(new THREE.BoxGeometry(11, 1.4, 3.2), dugoutMat));
+  const roof1 = new THREE.Mesh(new THREE.BoxGeometry(11.4, 0.2, 3.6), dugoutRoofMat); roof1.position.y = 0.8; d1.add(roof1);
+  d1.position.set(22, 0.7, 10); d1.rotation.y = -Math.PI / 5.5; stadiumGroup.add(d1);
+
+  const d2 = d1.clone();
+  d2.position.set(-22, 0.7, 10); d2.rotation.y = Math.PI / 5.5; stadiumGroup.add(d2);
+
+  const foulPoleMat = new THREE.MeshStandardMaterial({ color: 0xffea00, roughness: 0.3, metalness: 0.8 });
+  const poleGeo = new THREE.CylinderGeometry(0.12, 0.12, 16, 12);
+  
+  const poleLGroup = new THREE.Group();
+  poleLGroup.add(new THREE.Mesh(poleGeo, foulPoleMat));
+  const wingGeo = new THREE.BoxGeometry(0.02, 12, 1.2);
+  const wingL = new THREE.Mesh(wingGeo, foulPoleMat); wingL.position.set(-0.6, 0, 0); poleLGroup.add(wingL);
+  poleLGroup.position.set(-39.5, 8.0, -27.5); stadiumGroup.add(poleLGroup);
+
+  const poleRGroup = new THREE.Group();
+  poleRGroup.add(new THREE.Mesh(poleGeo, foulPoleMat));
+  const wingR = new THREE.Mesh(wingGeo, foulPoleMat); wingR.position.set(0.6, 0, 0); poleRGroup.add(wingR);
+  poleRGroup.position.set(39.5, 8.0, -27.5); stadiumGroup.add(poleRGroup);
+
+  backstopGroup = new THREE.Group();
+  
+  const backstopWallMat = new THREE.MeshStandardMaterial({ color: stadiumInfo.accentColor, roughness: 0.6, side: THREE.DoubleSide });
+  const backstopGeo = new THREE.CylinderGeometry(15, 15, 2.5, 32, 1, true, -Math.PI * 0.2, Math.PI * 0.4);
+  const backstopWall = new THREE.Mesh(backstopGeo, backstopWallMat);
+  backstopWall.position.set(0, 1.25, 12);
+  backstopGroup.add(backstopWall);
+
+  const netMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: true, transparent: true, opacity: 0.35 });
+  const backstopNetGeo = new THREE.CylinderGeometry(15, 15, 6.0, 32, 1, true, -Math.PI * 0.2, Math.PI * 0.4);
+  const backstopNet = new THREE.Mesh(backstopNetGeo, netMat);
+  backstopNet.position.set(0, 5.5, 12);
+  backstopGroup.add(backstopNet);
+
+  const seatMat = new THREE.MeshStandardMaterial({ color: stadiumInfo.seatColor, roughness: 0.8 });
+  const homeStandGeo = new THREE.CylinderGeometry(30, 18, 9, 32, 1, true, -Math.PI * 0.22, Math.PI * 0.44);
+  const homeStand = new THREE.Mesh(homeStandGeo, seatMat);
+  homeStand.position.set(0, 4.5, 12);
+  backstopGroup.add(homeStand);
+
+  stadiumGroup.add(backstopGroup);
+
+  const lightPolePositions = [ new THREE.Vector3(-48, 0, -22), new THREE.Vector3(48, 0, -22), new THREE.Vector3(-32, 0, 18), new THREE.Vector3(32, 0, 18) ];
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8 });
+  const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfff0c2 });
+
+  lightPolePositions.forEach(pos => {
+    const pGroup = new THREE.Group();
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.55, 24, 8), poleMat);
+    pole.position.y = 12; pGroup.add(pole);
+
+    const head = new THREE.Mesh(new THREE.BoxGeometry(4.5, 3.0, 0.9), poleMat);
+    head.position.set(0, 24, 0); head.lookAt(0, 5, 0); pGroup.add(head);
+
+    const bulb = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 2.5), bulbMat);
+    bulb.position.set(0, 24, 0.48); bulb.lookAt(0, 5, 0); pGroup.add(bulb);
+
+    pGroup.position.copy(pos);
+    stadiumGroup.add(pGroup);
+  });
+
+  initScoreboardTexture();
+  const sbBoardGeo = new THREE.PlaneGeometry(24, 12);
+  const sbBoardMat = new THREE.MeshBasicMaterial({ map: scoreboardTexture });
+  const scoreboardMesh = new THREE.Mesh(sbBoardGeo, sbBoardMat);
+  scoreboardMesh.position.set(0, 17, 12 - fenceRadius - 1.8);
+  stadiumGroup.add(scoreboardMesh);
+
+  const trailGeo = new THREE.BufferGeometry();
+  const trailPositions = new Float32Array(TRAIL_MAX_POINTS * 3);
+  trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+  const trailMat = new THREE.MeshBasicMaterial({ color: 0xffce54, transparent: true, opacity: 0.85 });
+  ballTrailLine = new THREE.Line(trailGeo, trailMat);
+  ballTrailLine.visible = false;
+  scene.add(ballTrailLine);
+
+  if (!pitcherMesh) {
+    pitcherMesh = createPlayerMesh(false, false);
+    batterMesh = createPlayerMesh(true, false);
+    catcherMesh = createPlayerMesh(false, true);
+
+    for (const key in fieldersMap) {
+      fieldersMap[key].mesh = createPlayerMesh(false, false);
+      scene.add(fieldersMap[key].mesh);
+    }
+
+    ball = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 })
+    );
+    scene.add(ball);
+
+    for (let i = 0; i < 4; i++) {
+      const r = createPlayerMesh(false, false);
+      r.visible = false;
+      scene.add(r);
+      runnerMeshes.push(r);
+    }
+  }
+
+  pitcherMesh.position.set(0, 0.15, 0); stadiumGroup.add(pitcherMesh);
+  batterMesh.position.set(-1.2, 0, 12); stadiumGroup.add(batterMesh);
+  catcherMesh.position.set(0, 0, 13.2); stadiumGroup.add(catcherMesh);
+
+  for (const key in fieldersMap) {
+    fieldersMap[key].mesh.position.copy(fieldersMap[key].basePos);
+  }
+}
+
+function updateStaticRunners() {
+  if (!runnerMeshes || runnerMeshes.length < 4 || animState.active) return;
+  const baseCoords = [
+    new THREE.Vector3(0, 0, 12),
+    new THREE.Vector3(12, 0, 0),
+    new THREE.Vector3(0, 0, -12),
+    new THREE.Vector3(-12, 0, 0)
+  ];
+  runnerMeshes.forEach(m => m.visible = false);
+  if (state.bases[0]) {
+    runnerMeshes[1].position.copy(baseCoords[1]);
+    runnerMeshes[1].visible = true;
+  }
+  if (state.bases[1]) {
+    runnerMeshes[2].position.copy(baseCoords[2]);
+    runnerMeshes[2].visible = true;
+  }
+  if (state.bases[2]) {
+    runnerMeshes[3].position.copy(baseCoords[3]);
+    runnerMeshes[3].visible = true;
+  }
+}
+
+function updateTeamColors() {
+  if (!pitcherMesh || !batterMesh || !state) return;
+
+  const homeTeamName = state.home.name;
+  const awayTeamName = state.away.name;
+
+  const homeUniform = UNIFORM_DATA[homeTeamName] ? UNIFORM_DATA[homeTeamName].home : UNIFORM_DATA["KIA 타이거즈"].home;
+  const awayUniform = UNIFORM_DATA[awayTeamName] ? UNIFORM_DATA[awayTeamName].away : UNIFORM_DATA["삼성 라이온즈"].away;
+
+  const fieldingUniform = (state.half === 'top') ? homeUniform : awayUniform;
+  const battingUniform = (state.half === 'top') ? awayUniform : homeUniform;
+
+  applyUniformToPlayer(pitcherMesh, fieldingUniform);
+  applyUniformToPlayer(catcherMesh, fieldingUniform);
+  applyUniformToPlayer(batterMesh, battingUniform);
+
+  for (const key in fieldersMap) {
+    if (fieldersMap[key].mesh) {
+      applyUniformToPlayer(fieldersMap[key].mesh, fieldingUniform);
+    }
+  }
+
+  runnerMeshes.forEach(r => {
+    applyUniformToPlayer(r, battingUniform);
+  });
+}
+
+function applyUniformToPlayer(playerGroup, uniform) {
+  playerGroup.traverse(child => {
+    if (child.isMesh && child.userData && child.userData.part) {
+      const part = child.userData.part;
+      let colorHex = uniform.jersey;
+
+      if (part === 'jersey') colorHex = uniform.jersey;
+      else if (part === 'pants') colorHex = uniform.pants;
+      else if (part === 'cap') colorHex = uniform.cap;
+      else if (part === 'visor') colorHex = uniform.visor;
+      else if (part === 'sleeve') colorHex = uniform.sleeve;
+      else if (part === 'belt') colorHex = uniform.belt;
+      else if (part === 'socks') colorHex = uniform.socks || uniform.sleeve;
+      else if (part === 'catcher') colorHex = uniform.cap;
+
+      child.material = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        roughness: part === 'catcher' ? 0.4 : 0.7
+      });
+    }
+  });
+}
+
+function resetBallTrail() {
+  ballTrailPoints = [];
+  if (ballTrailLine) ballTrailLine.visible = false;
+}
+
+function addBallTrailPoint(pos) {
+  if (!ballTrailLine) return;
+  ballTrailPoints.push(pos.clone());
+  if (ballTrailPoints.length > TRAIL_MAX_POINTS) {
+    ballTrailPoints.shift();
+  }
+  const positions = ballTrailLine.geometry.attributes.position.array;
+  for (let i = 0; i < TRAIL_MAX_POINTS; i++) {
+    const pt = ballTrailPoints[i] || (ballTrailPoints.length > 0 ? ballTrailPoints[ballTrailPoints.length - 1] : pos);
+    positions[i * 3] = pt.x;
+    positions[i * 3 + 1] = pt.y;
+    positions[i * 3 + 2] = pt.z;
+  }
+  ballTrailLine.geometry.attributes.position.needsUpdate = true;
+  ballTrailLine.visible = ballTrailPoints.length > 1;
+}
+
+function start3DPickoffAnimation(targetBase, result, callback) {
+  resetBallTrail();
+  animState.active = true;
+  animState.phase = 'pickoff';
+  animState.time = 0;
+  animState.duration = 0.8;
+  animState.onComplete = callback;
+  animState.targetBase = targetBase;
+  animState.playType = result;
+
+  const basePos = targetBase === '1B' ? new THREE.Vector3(12, 0, 0) : new THREE.Vector3(0, 0, -12);
+  pitcherMesh.rotation.y = targetBase === '1B' ? -Math.PI / 2 : Math.PI;
+
+  animState.startPos.set(0, 1.2, 0);
+  animState.endPos.copy(basePos).add(new THREE.Vector3(0, 0.8, 0));
+  if (result === 'wild') {
+    animState.endPos.add(new THREE.Vector3(targetBase === '1B' ? 8 : 0, 1.5, targetBase === '1B' ? 0 : -8));
+  }
+  animState.controlPos.copy(animState.startPos).add(animState.endPos).multiplyScalar(0.5).add(new THREE.Vector3(0, 1.5, 0));
+
+  const fielderKey = targetBase === '1B' ? '1B' : '2B';
+  const fielderMesh = fieldersMap[fielderKey].mesh;
+  animState.activeFielderKey = fielderKey;
+  animState.fielderStartPos.copy(fielderMesh.position);
+  animState.fielderEndPos.copy(basePos);
+}
+
+function start3DBuntAnimation(isSuccess, callback) {
+  resetBallTrail();
+  animState.active = true;
+  animState.phase = 'bunt_pitch';
+  animState.time = 0;
+  animState.duration = 0.5;
+  animState.onComplete = callback;
+  animState.playType = isSuccess ? 'bunt_hit' : 'bunt_out';
+
+  animState.startPos.set(0, 1.35, 0);
+  animState.endPos.set(0, 0.85, 12);
+
+  const batGroup = batterMesh.getObjectByName("batGroup");
+  if (batGroup) {
+    batGroup.rotation.set(0, 0, Math.PI / 2);
+    batGroup.position.set(0.2, 0.85, 0);
+  }
+}
+
+function start3DStealAnimation(targetBase, isSuccess, callback) {
+  resetBallTrail();
+  animState.active = true;
+  animState.phase = 'steal';
+  animState.time = 0;
+  animState.duration = 1.2;
+  animState.onComplete = callback;
+  animState.targetBase = targetBase;
+  animState.playType = isSuccess ? 'steal_safe' : 'steal_out';
+
+  const startBasePos = targetBase === '2B' ? new THREE.Vector3(12, 0, 0) : new THREE.Vector3(0, 0, -12);
+  const endBasePos = targetBase === '2B' ? new THREE.Vector3(0, 0, -12) : new THREE.Vector3(-12, 0, 0);
+
+  const runnerMesh = runnerMeshes[0];
+  runnerMesh.visible = true;
+  runnerMesh.position.copy(startBasePos);
+
+  animState.startPos.set(0, 0.8, 13.2);
+  animState.endPos.copy(endBasePos).add(new THREE.Vector3(0, 0.5, 0));
+  animState.controlPos.copy(animState.startPos).add(animState.endPos).multiplyScalar(0.5).add(new THREE.Vector3(0, 2, 0));
+
+  const fielderKey = targetBase === '2B' ? '2B' : '3B';
+  animState.activeFielderKey = fielderKey;
+  animState.fielderStartPos.copy(fieldersMap[fielderKey].basePos);
+  animState.fielderEndPos.copy(endBasePos);
+}
+
+function start3DAnimation(outcome, callback, pitchChoice = 3) {
+  if (!renderer) {
+    callback();
+    return;
+  }
+
+  playSound('pitch');
+  resetBallTrail();
+  updateABS(null, null, null);
+
+  const currentPitcherObj = isPlayerPitching() ? getActivePitcher('home') : getActivePitcher('away');
+  const baseSpeed = currentPitcherObj.speed;
+  const pitcherStamina = isPlayerPitching() ? state.pitchersStamina.home[state.activePitcherKey.home] : state.pitchersStamina.away[state.activePitcherKey.away];
+  
+  let staminaSpeedLoss = 0;
+  if (pitcherStamina < 50) {
+    staminaSpeedLoss = Math.floor((50 - pitcherStamina) * 0.18); 
+  }
+
+  const pitchTypesArr = currentPitcherObj.type.split('/');
+  let pType = pitchTypesArr[0]; 
+  let pSpeed = baseSpeed - staminaSpeedLoss;
+
+  if (pitchChoice === 1) {
+    pType = pitchTypesArr[0] || '포심';
+    pSpeed += Math.floor(-2 + Math.random() * 5);
+  } else if (pitchChoice === 2) {
+    pType = pitchTypesArr[1] || pitchTypesArr[0] || '변화구';
+    pSpeed -= Math.floor(10 + Math.random() * 12);
+  } else {
+    pType = pitchTypesArr[0] || '포심';
+    pSpeed += Math.floor(Math.random() * 3);
+  }
+
+  animState.pitchType = pType;
+  animState.pitchSpeed = pSpeed;
+
+  const choiceBox = document.getElementById('choiceButtons');
+  if (choiceBox) {
+    choiceBox.style.pointerEvents = 'none';
+    choiceBox.style.opacity = '0.35';
+  }
+
+  const isStrike = ['strike_looking', 'strike_swinging', 'foul', 'out', 'single', 'double', 'triple', 'homerun'].includes(outcome);
+  let px = 0;
+  let py = 0.85;
+
+  if (isStrike) {
+    // ABS 세로 직사각형 존 내부 좌표 (X: -0.21 ~ +0.21, Y: 0.55 ~ 1.15)
+    px = (Math.random() - 0.5) * 0.42; 
+    py = 0.55 + Math.random() * 0.60;  
+  } else {
+    // ABS 존 외부 좌표 (볼)
+    const borderChoice = Math.floor(Math.random() * 4);
+    if (borderChoice === 0) { 
+      px = -0.32 - Math.random() * 0.20; py = 0.45 + Math.random() * 0.80;
+    } else if (borderChoice === 1) { 
+      px = 0.32 + Math.random() * 0.20; py = 0.45 + Math.random() * 0.80;
+    } else if (borderChoice === 2) { 
+      px = (Math.random() - 0.5) * 0.5; py = 1.28 + Math.random() * 0.20;
+    } else { 
+      px = (Math.random() - 0.5) * 0.5; py = 0.20 + Math.random() * 0.20;
+    }
+  }
+
+  animState.pitchX = px;
+  animState.pitchY = py;
+
+  animState.active = true;
+  animState.phase = 'pitching';
+  animState.time = 0;
+  animState.duration = 0.55; 
+  animState.outcome = outcome;
+  animState.onComplete = callback;
+
+  animState.startPos.set(0, 1.35, 0);
+  animState.endPos.set(px, py, 12); 
+
+  animState.activeFielderKey = null;
+  animState.playType = 'none';
+
+  updateStaticRunners();
+  updateTeamColors();
+}
+
+function update3D(deltaTime) {
+  if (!animState.active) {
+    camera.position.lerp(targetCamPos, 0.08);
+    currentCamLook.lerp(targetCamLook, 0.08);
+    camera.lookAt(currentCamLook);
+    return;
+  }
+
+  animState.time += deltaTime;
+  let t = Math.min(animState.time / animState.duration, 1);
+
+  if (animState.phase === 'pickoff') {
+    const p0 = animState.startPos;
+    const p1 = animState.controlPos;
+    const p2 = animState.endPos;
+    ball.position.x = (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * p1.x + t * t * p2.x;
+    ball.position.y = (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
+    ball.position.z = (1 - t) * (1 - t) * p0.z + 2 * (1 - t) * t * p1.z + t * t * p2.z;
+    addBallTrailPoint(ball.position);
+
+    if (animState.activeFielderKey) {
+      const fMesh = fieldersMap[animState.activeFielderKey].mesh;
+      fMesh.position.lerpVectors(animState.fielderStartPos, animState.fielderEndPos, t);
+      fMesh.rotation.z = Math.sin(t * Math.PI) * 0.4;
+    }
+
+    if (t >= 1) completeAnimation();
+    return;
+  }
+
+  if (animState.phase === 'bunt_pitch') {
+    ball.position.lerpVectors(animState.startPos, animState.endPos, t);
+    addBallTrailPoint(ball.position);
+
+    if (t >= 1) {
+      animState.phase = 'bunt_roll';
+      animState.time = 0;
+      animState.duration = 1.0;
+
+      animState.startPos.set(0, 0.85, 12);
+      animState.endPos.set((Math.random() - 0.5) * 4, 0.1, 7 + Math.random() * 3);
+
+      const isPitcherFielding = Math.random() < 0.5;
+      animState.activeFielderKey = isPitcherFielding ? 'P' : 'C';
+
+      if (isPitcherFielding) {
+        animState.fielderStartPos.copy(pitcherMesh.position);
+      } else {
+        animState.fielderStartPos.copy(catcherMesh.position);
+      }
+      animState.fielderEndPos.copy(animState.endPos);
+    }
+    return;
+  }
+
+  if (animState.phase === 'bunt_roll') {
+    ball.position.lerpVectors(animState.startPos, animState.endPos, t);
+    addBallTrailPoint(ball.position);
+
+    const defenderMesh = animState.activeFielderKey === 'P' ? pitcherMesh : catcherMesh;
+    defenderMesh.position.lerpVectors(animState.fielderStartPos, animState.fielderEndPos, t);
+    defenderMesh.rotation.x = Math.sin(t * Math.PI) * 0.4;
+
+    if (t >= 1) {
+      if (animState.playType === 'bunt_hit') {
+        completeAnimation();
+      } else {
+        animState.phase = 'defense';
+        animState.time = 0;
+        animState.duration = 0.45;
+        animState.startPos.copy(animState.endPos);
+        animState.endPos.copy(fieldersMap['1B'].basePos).add(new THREE.Vector3(0, 0.8, 0));
+        animState.controlPos.copy(animState.startPos).add(animState.endPos).multiplyScalar(0.5).add(new THREE.Vector3(0, 1.2, 0));
+      }
+    }
+    return;
+  }
+
+  if (animState.phase === 'steal') {
+    const startBasePos = animState.targetBase === '2B' ? new THREE.Vector3(12, 0, 0) : new THREE.Vector3(0, 0, -12);
+    const endBasePos = animState.targetBase === '2B' ? new THREE.Vector3(0, 0, -12) : new THREE.Vector3(-12, 0, 0);
+
+    runnerMeshes[0].position.lerpVectors(startBasePos, endBasePos, t);
+    runnerMeshes[0].rotation.z = Math.sin(t * Math.PI * 8) * 0.15;
+
+    const p0 = animState.startPos;
+    const p1 = animState.controlPos;
+    const p2 = animState.endPos;
+    ball.position.x = (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * p1.x + t * t * p2.x;
+    ball.position.y = (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
+    ball.position.z = (1 - t) * (1 - t) * p0.z + 2 * (1 - t) * t * p2.z + t * t * p2.z;
+    addBallTrailPoint(ball.position);
+
+    if (animState.activeFielderKey) {
+      const fMesh = fieldersMap[animState.activeFielderKey].mesh;
+      fMesh.position.lerpVectors(animState.fielderStartPos, animState.fielderEndPos, t);
+      fMesh.rotation.y = Math.sin(t * Math.PI) * 0.5;
+    }
+
+    if (t >= 1) completeAnimation();
+    return;
+  }
+
+  if (animState.phase === 'pitching') {
+    let pPos = new THREE.Vector3().lerpVectors(animState.startPos, animState.endPos, t);
+    const pType = animState.pitchType || '';
+    
+    const breakFactor = Math.sin(t * Math.PI); 
+    let curveX = 0, curveY = 0;
+
+    if (pType.includes('슬라이더') || pType.includes('스위퍼') || pType.includes('슬러브')) {
+      curveX = -0.45 * Math.pow(t, 1.4) * breakFactor;
+      curveY = -0.15 * breakFactor;
+    } else if (pType.includes('커브')) {
+      curveX = -0.15 * breakFactor;
+      curveY = (0.35 * Math.sin(t * Math.PI) - 0.45 * t) * breakFactor;
+    } else if (pType.includes('포크') || pType.includes('스플리터')) {
+      curveX = 0;
+      curveY = -0.55 * Math.pow(t, 2) * breakFactor;
+    } else if (pType.includes('체인지업') || pType.includes('투심') || pType.includes('싱커')) {
+      curveX = 0.35 * breakFactor;
+      curveY = -0.25 * breakFactor;
+    } else if (pType.includes('커터') || pType.includes('컷패스트볼')) {
+      curveX = -0.22 * Math.pow(t, 1.4) * breakFactor;
+      curveY = -0.08 * breakFactor;
+    }
+
+    pPos.x += curveX;
+    pPos.y += curveY;
+    ball.position.copy(pPos);
+    addBallTrailPoint(ball.position);
+
+    if (t >= 1) {
+      updateABS(animState.pitchX, animState.pitchY, animState.outcome);
+
+      const outc = animState.outcome;
+      if (outc === 'ball' || outc === 'strike_looking' || outc === 'strike_swinging') {
+        playSound('catch');
+        completeAnimation();
+        return;
+      }
+
+      animState.phase = 'hitting';
+      animState.time = 0;
+
+      if (outc === 'foul') {
+        animState.duration = 0.85;
+        animState.startPos.set(animState.pitchX, animState.pitchY, 12);
+        const side = Math.random() < 0.5 ? -1 : 1;
+        animState.endPos.set(side * 22, 0.1, 15);
+        animState.controlPos.set(side * 11, 7, 13); 
+      } else if (outc === 'out') {
+        const isFlyout = Math.random() < 0.5;
+        animState.playType = isFlyout ? 'flyout' : 'grounder';
+
+        let targetFielderKey = '';
+        let targetPos = new THREE.Vector3();
+        let height = 3;
+        let dur = 1.3;
+
+        if (isFlyout) {
+          targetFielderKey = pick(['LF', 'CF', 'RF']);
+          const basePos = fieldersMap[targetFielderKey].basePos;
+          targetPos.copy(basePos).add(new THREE.Vector3((Math.random() - 0.5) * 3, 0, (Math.random() - 0.5) * 3));
+          targetPos.y = 0.8; 
+          height = 11; dur = 1.5;
+        } else {
+          targetFielderKey = pick(['2B', 'SS', '3B']); 
+          const basePos = fieldersMap[targetFielderKey].basePos;
+          targetPos.copy(basePos).add(new THREE.Vector3((Math.random() - 0.5) * 1.5, 0, (Math.random() - 0.5) * 1.5));
+          targetPos.y = 0.1; 
+          height = 0.8; dur = 1.0;
+        }
+
+        animState.activeFielderKey = targetFielderKey;
+        animState.fielderStartPos.copy(fieldersMap[targetFielderKey].mesh.position);
+        animState.fielderEndPos.copy(targetPos);
+        animState.fielderEndPos.y = 0; 
+
+        animState.startPos.set(animState.pitchX, animState.pitchY, 12);
+        animState.endPos.copy(targetPos);
+        animState.controlPos.set((animState.startPos.x + targetPos.x) / 2, height, (animState.startPos.z + targetPos.z) / 2);
+        animState.duration = dur;
+
+      } else {
+        let h = 5, dur = 1.2;
+        let target = new THREE.Vector3();
+        if (outc === 'single') {
+          target.set((Math.random() - 0.5) * 16, 0.1, -15); h = 5; dur = 1.1;
+        } else if (outc === 'double') {
+          target.set((Math.random() - 0.5) * 26, 0.1, -25); h = 8; dur = 1.4;
+        } else if (outc === 'triple') {
+          target.set((Math.random() < 0.5 ? -33 : 33), 0.1, -30); h = 10; dur = 1.6;
+        } else if (outc === 'homerun') {
+          target.set((Math.random() - 0.5) * 28, 0.5, -58); h = 26; dur = 2.4;
+        }
+        animState.startPos.set(animState.pitchX, animState.pitchY, 12);
+        animState.endPos.copy(target);
+        animState.controlPos.set(target.x / 2, h, (12 + target.z) / 2);
+        animState.duration = dur;
+      }
+    }
+  } else if (animState.phase === 'hitting') {
+    const swingOutcomes = ['foul', 'out', 'single', 'double', 'triple', 'homerun'];
+    if (swingOutcomes.includes(animState.outcome)) {
+      if (animState.outcome === 'homerun') {
+        batterMesh.rotation.y = -Math.PI / 2 - Math.sin(t * Math.PI) * 3.6;
+        const batGroup = batterMesh.getObjectByName("batGroup");
+        if (batGroup && t > 0.3) {
+          batGroup.position.set(0.35 + Math.sin(t * Math.PI * 4) * 0.8, 1.2 + t * 2.0, 0.1 + t * 1.5);
+          batGroup.rotation.z += 0.35;
+        }
+        const lArm = batterMesh.getObjectByName("leftArm");
+        const rArm = batterMesh.getObjectByName("rightArm");
+        if (lArm && rArm && t > 0.4) {
+          lArm.rotation.z = Math.min(2.2, lArm.rotation.z + 0.15);
+          rArm.rotation.z = Math.max(-2.2, rArm.rotation.z - 0.15);
+        }
+      } else {
+        batterMesh.rotation.y = -Math.PI / 2 - Math.sin(t * Math.PI) * 2.8;
+      }
+    }
+
+    if (animState.outcome === 'homerun') {
+      const camTargetPos = new THREE.Vector3(
+        ball.position.x * 0.5,
+        Math.max(3.5, ball.position.y * 0.6 + 2.0),
+        ball.position.z + 14
+      );
+      camera.position.lerp(camTargetPos, 0.08);
+      camera.lookAt(ball.position);
+    }
+
+    if (animState.activeFielderKey && fieldersMap[animState.activeFielderKey]) {
+      const fielderMesh = fieldersMap[animState.activeFielderKey].mesh;
+      fielderMesh.position.lerpVectors(animState.fielderStartPos, animState.fielderEndPos, t);
+      if (t > 0.6) {
+        fielderMesh.rotation.z = Math.sin((t - 0.6) * Math.PI * 2.5) * 0.5;
+      }
+    }
+
+    const p0 = animState.startPos;
+    const p1 = animState.controlPos;
+    const p2 = animState.endPos;
+
+    if (animState.outcome === 'out' && animState.playType === 'grounder') {
+      ball.position.x = THREE.MathUtils.lerp(p0.x, p2.x, t);
+      ball.position.z = THREE.MathUtils.lerp(p0.z, p2.z, t);
+      ball.position.y = Math.sin(t * Math.PI) * 0.25 + 0.12;
+    } else {
+      ball.position.x = (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * p1.x + t * t * p2.x;
+      ball.position.y = (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
+      ball.position.z = (1 - t) * (1 - t) * p0.z + 2 * (1 - t) * t * p1.z + t * t * p2.z;
+    }
+    addBallTrailPoint(ball.position);
+
+    if (t >= 1) {
+      if (animState.outcome === 'out') {
+        if (animState.playType === 'grounder') {
+          animState.phase = 'defense';
+          animState.time = 0;
+          animState.duration = 0.45; 
+
+          animState.startPos.copy(animState.fielderEndPos).add(new THREE.Vector3(-0.35, 0.55, 0)); 
+          animState.endPos.copy(fieldersMap['1B'].basePos).add(new THREE.Vector3(-0.35, 0.55, 0)); 
+          animState.controlPos.copy(animState.startPos).add(animState.endPos).multiplyScalar(0.5).add(new THREE.Vector3(0, 1.2, 0));
+        } else {
+          animState.phase = 'defense_pause';
+          animState.time = 0;
+          animState.duration = 0.5; 
+        }
+      } else {
+        const runOutcomes = ['single', 'double', 'triple', 'homerun', 'walk'];
+        if (runOutcomes.includes(animState.outcome)) {
+          startRunningPhase(runOutcomes);
+        } else {
+          completeAnimation();
+        }
+      }
+    }
+  } else if (animState.phase === 'defense') {
+    const p0 = animState.startPos;
+    const p1 = animState.controlPos;
+    const p2 = animState.endPos;
+    ball.position.x = (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * p1.x + t * t * p2.x;
+    ball.position.y = (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
+    ball.position.z = (1 - t) * (1 - t) * p0.z + 2 * (1 - t) * t * p1.z + t * t * p2.z;
+    addBallTrailPoint(ball.position);
+
+    if (t >= 1) {
+      ball.position.copy(fieldersMap['1B'].basePos).add(new THREE.Vector3(-0.35, 0.55, 0));
+      playSound('catch');
+      completeAnimation();
+    }
+  } else if (animState.phase === 'defense_pause') {
+    if (animState.activeFielderKey && fieldersMap[animState.activeFielderKey]) {
+      const fMesh = fieldersMap[animState.activeFielderKey].mesh;
+      ball.position.copy(fMesh.position).add(new THREE.Vector3(-0.35, 0.55, 0)); 
+    }
+    if (t >= 1) {
+      playSound('catch');
+      completeAnimation();
+    }
+  } else if (animState.phase === 'running') {
+    animState.animPaths.forEach(ap => {
+      ap.mesh.position.copy(getPointAlongPath(ap.path, t));
+      ap.mesh.rotation.z = Math.sin(t * Math.PI * 10) * 0.12;
+    });
+
+    if (t >= 1) {
+      completeAnimation();
+    }
+  }
+}
+
+function startRunningPhase(runOutcomes) {
+  animState.phase = 'running';
+  animState.time = 0;
+  animState.duration = 1.5; 
+
+  const baseCoords = [
+    new THREE.Vector3(0, 0, 12),
+    new THREE.Vector3(12, 0, 0),
+    new THREE.Vector3(0, 0, -12),
+    new THREE.Vector3(-12, 0, 0),
+    new THREE.Vector3(0, 0, 12)
+  ];
+
+  let steps = 0;
+  if (animState.outcome === 'single') steps = 1;
+  else if (animState.outcome === 'double') steps = 2;
+  else if (animState.outcome === 'triple') steps = 3;
+  else if (animState.outcome === 'homerun') steps = 4;
+  else if (animState.outcome === 'walk') steps = 1;
+
+  let animPaths = [];
+
+  let bPath = [];
+  for (let s = 0; s <= steps; s++) bPath.push(baseCoords[s].clone());
+  animPaths.push({ mesh: runnerMeshes[0], path: bPath });
+
+  if (state.bases[0]) {
+    let rSteps = steps;
+    if (animState.outcome === 'walk') rSteps = 1;
+    let rPath = [];
+    for (let s = 0; s <= rSteps; s++) rPath.push(baseCoords[Math.min(1 + s, 4)].clone());
+    animPaths.push({ mesh: runnerMeshes[1], path: rPath });
+  }
+
+  if (state.bases[1]) {
+    let rSteps = steps;
+    if (animState.outcome === 'walk') rSteps = state.bases[0] ? 1 : 0;
+    if (rSteps > 0) {
+      let rPath = [];
+      for (let s = 0; s <= rSteps; s++) rPath.push(baseCoords[Math.min(2 + s, 4)].clone());
+      animPaths.push({ mesh: runnerMeshes[2], path: rPath });
+    } else {
+      runnerMeshes[2].position.copy(baseCoords[2]);
+      runnerMeshes[2].visible = true;
+    }
+  }
+
+  if (state.bases[2]) {
+    let rSteps = steps;
+    if (animState.outcome === 'walk') rSteps = (state.bases[0] && state.bases[1]) ? 1 : 0;
+    if (rSteps > 0) {
+      let rPath = [];
+      for (let s = 0; s <= rSteps; s++) rPath.push(baseCoords[Math.min(3 + s, 4)].clone());
+      animPaths.push({ mesh: runnerMeshes[3], path: rPath });
+    } else {
+      runnerMeshes[3].position.copy(baseCoords[3]);
+      runnerMeshes[3].visible = true;
+    }
+  }
+
+  runnerMeshes.forEach(m => m.visible = false);
+  animPaths.forEach(ap => {
+    ap.mesh.visible = true;
+    ap.mesh.position.copy(ap.path[0]);
+  });
+
+  if (state.bases[0] && animState.outcome !== 'walk' && steps === 0) {
+    runnerMeshes[1].visible = true;
+    runnerMeshes[1].position.copy(baseCoords[1]);
+  }
+  if (state.bases[1] && !(animState.outcome === 'walk' ? state.bases[0] : (steps > 0))) {
+    runnerMeshes[2].visible = true;
+    runnerMeshes[2].position.copy(baseCoords[2]);
+  }
+  if (state.bases[2] && !(animState.outcome === 'walk' ? (state.bases[0] && state.bases[1]) : (steps > 0))) {
+    runnerMeshes[3].visible = true;
+    runnerMeshes[3].position.copy(baseCoords[3]);
+  }
+
+  animState.animPaths = animPaths;
+}
+
+function getPointAlongPath(path, t) {
+  if (path.length === 0) return new THREE.Vector3();
+  if (path.length === 1) return path[0].clone();
+  if (t >= 1) return path[path.length - 1].clone();
+
+  const segments = path.length - 1;
+  const progress = t * segments;
+  const index = Math.floor(progress);
+  const segmentT = progress - index;
+
+  return new THREE.Vector3().lerpVectors(path[index], path[index + 1], segmentT);
+}
+
+function completeAnimation() {
+  animState.active = false;
+  animState.phase = 'none';
+
+  batterMesh.rotation.y = -Math.PI / 2; 
+  pitcherMesh.rotation.y = 0;
+  pitcherMesh.position.set(0, 0.15, 0);
+  catcherMesh.position.set(0, 0, 13.2);
+  
+  const batGroup = batterMesh.getObjectByName("batGroup");
+  if (batGroup) {
+    batGroup.rotation.set(0.2, 0, -Math.PI / 4.2);
+    batGroup.position.set(0.35, 0.85, 0.1);
+  }
+
+  const lArm = batterMesh.getObjectByName("leftArm");
+  const rArm = batterMesh.getObjectByName("rightArm");
+  if (lArm) lArm.rotation.z = 0.25;
+  if (rArm) rArm.rotation.z = -0.25;
+
+  ball.position.set(0, 1.2, 0);         
+  resetBallTrail();
+
+  runnerMeshes.forEach(m => {
+    m.visible = false;
+    m.rotation.z = 0;
+  });
+
+  for (const key in fieldersMap) {
+    const f = fieldersMap[key];
+    if (f.mesh) {
+      f.mesh.position.copy(f.basePos);
+      f.mesh.rotation.set(0, 0, 0);
+    }
+  }
+
+  if (animState.onComplete) {
+    animState.onComplete();
+  }
+
+  const choiceBox = document.getElementById('choiceButtons');
+  if (choiceBox) {
+    choiceBox.style.pointerEvents = 'auto';
+    choiceBox.style.opacity = '1';
+  }
+}
+
+/* ==========================================================================
+   ABS 존 그래픽 렌더러 (세로 직사각형 정밀 매핑 연동)
+   ========================================================================== */
+function updateABS(x, y, outcome) {
+  const canvas = document.getElementById('absCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // 모눈 배경
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 6; i++) {
+    let yLine = (h / 6) * i;
+    ctx.beginPath(); ctx.moveTo(0, yLine); ctx.lineTo(w, yLine); ctx.stroke();
+  }
+  for (let i = 1; i < 4; i++) {
+    let xLine = (w / 4) * i;
+    ctx.beginPath(); ctx.moveTo(xLine, 0); ctx.lineTo(xLine, h); ctx.stroke();
+  }
+
+  // 3D 좌표 -> 캔버스 세로 직사각형 매핑
+  const mapX = (val) => w / 2 + (val / 0.60) * (w / 2);
+  const mapY = (val) => h - ((val - 0.10) / 1.40) * h;
+
+  // 세로 직사각형 스트라이크 존 경계 (-0.25 ~ +0.25, 0.50 ~ 1.20)
+  const left = mapX(-0.25);
+  const right = mapX(0.25);
+  const top = mapY(1.20);
+  const bottom = mapY(0.50);
+  const zoneW = right - left;
+  const zoneH = bottom - top;
+
+  // 메인 존 사각형
+  ctx.fillStyle = 'rgba(255, 206, 84, 0.08)';
+  ctx.fillRect(left, top, zoneW, zoneH);
+
+  // 3x3 격자선
+  ctx.strokeStyle = 'rgba(255, 206, 84, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 1; i < 3; i++) {
+    ctx.moveTo(left + (zoneW / 3) * i, top);
+    ctx.lineTo(left + (zoneW / 3) * i, bottom);
+    ctx.moveTo(left, top + (zoneH / 3) * i);
+    ctx.lineTo(right, top + (zoneH / 3) * i);
+  }
+  ctx.stroke();
+
+  // ABS 테두리
+  ctx.strokeStyle = '#ffce54';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = 'rgba(255, 206, 84, 0.6)';
+  ctx.shadowBlur = 6;
+  ctx.strokeRect(left, top, zoneW, zoneH);
+  ctx.shadowBlur = 0;
+
+  // 홈플레이트 가이드
+  const plateY = bottom + 10;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+  ctx.beginPath();
+  ctx.moveTo(w / 2 - 14, plateY);
+  ctx.lineTo(w / 2 + 14, plateY);
+  ctx.lineTo(w / 2 + 14, plateY + 5);
+  ctx.lineTo(w / 2, plateY + 10);
+  ctx.lineTo(w / 2 - 14, plateY + 5);
+  ctx.closePath();
+  ctx.fill();
+
+  if (x !== undefined && x !== null && y !== undefined && y !== null) {
+    const cx = mapX(x);
+    const cy = mapY(y);
+    const isStrike = ['strike_looking', 'strike_swinging', 'foul', 'out', 'single', 'double', 'triple', 'homerun'].includes(outcome);
+
+    const glowRad = 12;
+    const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, glowRad);
+    if (isStrike) {
+      grad.addColorStop(0, 'rgba(0, 230, 118, 0.95)'); 
+      grad.addColorStop(1, 'rgba(0, 230, 118, 0)');
+    } else {
+      grad.addColorStop(0, 'rgba(255, 82, 82, 0.95)'); 
+      grad.addColorStop(1, 'rgba(255, 82, 82, 0)');
+    }
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, glowRad, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = isStrike ? '#00e676' : '#ff5252';
+    ctx.beginPath(); ctx.arc(cx, cy, 4.5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(cx - 1.0, cy - 1.0, 1.5, 0, Math.PI * 2); ctx.fill();
+
+    const info = document.getElementById('absInfo');
+    if (info) {
+      if (outcome === 'ball') {
+        info.innerHTML = `<span style="color:#ff5252; font-weight:900; letter-spacing:0.5px;">BALL</span><br><span style="color:#ffffff; font-weight:700;">${animState.pitchType}</span><br>(${animState.pitchSpeed}km/h)`;
+      } else if (outcome === 'strike_looking') {
+        info.innerHTML = `<span style="color:#00e676; font-weight:900; letter-spacing:0.5px;">STRIKE</span><br><span style="color:#ffffff; font-weight:700;">${animState.pitchType}</span><br>(${animState.pitchSpeed}km/h)`;
+      } else {
+        const suffix = ['single', 'double', 'triple', 'homerun'].includes(outcome) ? 'HIT' : 'SWING';
+        const displayColor = suffix === 'HIT' ? '#ffce54' : '#00e676';
+        info.innerHTML = `<span style="color:${displayColor}; font-weight:900; letter-spacing:0.5px;">${suffix}</span><br><span style="color:#ffffff; font-weight:700;">${animState.pitchType}</span><br>(${animState.pitchSpeed}km/h)`;
+      }
+    }
+  } else {
+    const info = document.getElementById('absInfo');
+    if (info) info.innerHTML = '<span style="color:rgba(242,237,225,0.45);">판정 대기 중</span>';
+  }
+}
+</script>
+</body>
+</html>
